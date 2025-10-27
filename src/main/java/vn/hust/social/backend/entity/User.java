@@ -1,6 +1,4 @@
-package vn.hust.social.backend.config;
-
-//
+package vn.hust.social.backend.entity;
 
 import jakarta.persistence.*;
 
@@ -26,7 +24,7 @@ public class User {
     private String displayName;
 
     @Column(name = "avatar_url")
-    private String avatarUrl;
+    private String avatarKey;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -38,12 +36,12 @@ public class User {
         // Default JPA constructor
     }
 
-    public User(String firstName, String lastName, String displayName, String avatarUrl) {
+    public User(String firstName, String lastName, String displayName) {
         this.id = UUID.randomUUID(); // tạo UUID khi khởi tạo
         this.firstName = firstName;
         this.lastName = lastName;
         this.displayName = displayName;
-        this.avatarUrl = avatarUrl;
+        this.avatarKey = "/user-avatars/default.png";
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -65,8 +63,8 @@ public class User {
         return displayName;
     }
 
-    public String getAvatarUrl() {
-        return avatarUrl;
+    public String getAvatarKey() {
+        return avatarKey;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -83,8 +81,8 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
+    public void setAvatarKey(String avatarKey) {
+        this.avatarKey = avatarKey;
         this.updatedAt = LocalDateTime.now();
     }
 

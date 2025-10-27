@@ -1,6 +1,7 @@
-package vn.hust.social.backend.config;
+package vn.hust.social.backend.entity;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -8,6 +9,11 @@ import java.util.UUID;
 @Table(name = "user_auths",
         uniqueConstraints = @UniqueConstraint(columnNames = {"provider", "provider_id"}))
 public class UserAuth {
+
+    public enum AuthProvider {
+        LOCAL,
+        M365
+    }
 
     @Id
     @GeneratedValue
@@ -22,8 +28,8 @@ public class UserAuth {
     @Column(nullable = false)
     private AuthProvider provider; // LOCAL, M365
 
-    @Column(name = "provider_id", nullable = false)
-    private String providerId; // email cho LOCAL, M365 id cho M365
+    @Column(name = "email", nullable = false)
+    private String email; // email cho LOCAL, M365 id cho M365
 
     @Column(name = "password")
     private String password; // nullable nếu OAuth
@@ -35,11 +41,11 @@ public class UserAuth {
         // Constructor mặc định cho JPA
     }
 
-    public UserAuth(User user, AuthProvider provider, String providerId, String password) {
+    public UserAuth(User user, AuthProvider provider, String email, String password) {
         this.id = UUID.randomUUID();
         this.user = user;
         this.provider = provider;
-        this.providerId = providerId;
+        this.email = email;
         this.password = password;
         this.createdAt = LocalDateTime.now();
     }
@@ -58,7 +64,7 @@ public class UserAuth {
     }
 
     public String getProviderId() {
-        return providerId;
+        return email;
     }
 
     public String getPassword() {
@@ -69,6 +75,10 @@ public class UserAuth {
         return createdAt;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
     // ===== Setters =====
     public void setPassword(String password) {
         this.password = password;
@@ -77,15 +87,9 @@ public class UserAuth {
     @Override
     public String toString() {
         return String.format(
-                "UserAuth[id=%s, userId=%s, provider=%s, providerId=%s]",
-                id, user.getId(), provider, providerId
+                "UserAuth[id=%s, userId=%s, provider=%s, email=%s]",
+                id, user.getId(), provider, email
         );
-    }
-
-    // ===== Enum cho provider =====
-    public enum AuthProvider {
-        LOCAL,
-        M365
     }
 }
 
