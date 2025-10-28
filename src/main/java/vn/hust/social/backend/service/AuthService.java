@@ -1,20 +1,22 @@
 package vn.hust.social.backend.service;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.dto.ForgotPasswordResponse;
+
 import vn.hust.social.backend.dto.LoginResponse;
 import vn.hust.social.backend.dto.UserDto;
 import vn.hust.social.backend.entity.User;
 import vn.hust.social.backend.entity.UserAuth;
-import vn.hust.social.backend.exception.EmailAlreadyRegisteredException;
-import vn.hust.social.backend.exception.InvalidPasswordException;
-import vn.hust.social.backend.exception.UserNotFoundException;
+import vn.hust.social.backend.exception.*;
 import vn.hust.social.backend.repository.UserAuthRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.hust.social.backend.repository.UserRepository;
 import vn.hust.social.backend.security.JwtUtils;
 
+@Slf4j
 @Service
 public class AuthService {
 
@@ -62,6 +64,10 @@ public class AuthService {
             throw new EmailAlreadyRegisteredException(email);
         }
 
+        if (userRepository.existsByDisplayName(displayName)) {
+            throw new DisplayNameAlreadyExistedException(displayName);
+        }
+
         String encodedPassword = passwordEncoder.encode(rawPassword);
         User user = new User(firstName, lastName, displayName);
         UserAuth auth = new UserAuth(user, UserAuth.AuthProvider.LOCAL, email, encodedPassword);
@@ -92,6 +98,11 @@ public class AuthService {
         UserAuth auth = userAuthRepository
                 .findByProviderAndEmail(UserAuth.AuthProvider.LOCAL, email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        User user = userAuthRepository.findByProviderAndEmail(UserAuth.AuthProvider.LOCAL, email).get().getUser();
+        if (user.getEmailVerified() == false) {
+            throw new EmailNotVerifiedException(email);
+        }
 
         if (!passwordEncoder.matches(rawPassword, auth.getPassword())) {
             throw new InvalidPasswordException("Invalid password");

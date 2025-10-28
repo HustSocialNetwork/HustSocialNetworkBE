@@ -48,10 +48,17 @@ public class GlobalExceptionHandler {
                 .body(Map.of("success", false, "errors", errors));
     }
 
+    @ExceptionHandler(DisplayNameAlreadyExistedException.class)
+    public ResponseEntity<?> handleDisplayNameAlreadyExisted(DisplayNameAlreadyExistedException e) {
+        return ResponseEntity
+                .badRequest()
+                .body(Map.of("success", false, "message", e.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleOtherExceptions(Exception e) {
         return ResponseEntity
                 .internalServerError()
-                .body(Map.of("success", false, "message", "Something went wrong"));
+                .body(Map.of("success", false, "message", e.getMessage()));
     }
 }

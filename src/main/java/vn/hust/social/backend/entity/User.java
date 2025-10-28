@@ -23,7 +23,7 @@ public class User {
     @Column(name = "display_name")
     private String displayName;
 
-    @Column(name = "avatar_url")
+    @Column(name = "avatar_key")
     private String avatarKey;
 
     @Column(name = "created_at", nullable = false)
@@ -32,18 +32,20 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "email_verified")
+    private boolean emailVerified;
     protected User() {
         // Default JPA constructor
     }
 
     public User(String firstName, String lastName, String displayName) {
-        this.id = UUID.randomUUID(); // tạo UUID khi khởi tạo
         this.firstName = firstName;
         this.lastName = lastName;
         this.displayName = displayName;
         this.avatarKey = "/user-avatars/default.png";
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.emailVerified = false;
     }
 
     // ===== Getters =====
@@ -75,6 +77,10 @@ public class User {
         return updatedAt;
     }
 
+    public boolean getEmailVerified() {
+        return emailVerified;
+    }
+
     // ===== Setters =====
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
@@ -86,6 +92,9 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
     @Override
     public String toString() {
         return String.format(

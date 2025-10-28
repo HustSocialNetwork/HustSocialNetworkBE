@@ -42,7 +42,6 @@ public class UserAuth {
     }
 
     public UserAuth(User user, AuthProvider provider, String email, String password) {
-        this.id = UUID.randomUUID();
         this.user = user;
         this.provider = provider;
         this.email = email;
