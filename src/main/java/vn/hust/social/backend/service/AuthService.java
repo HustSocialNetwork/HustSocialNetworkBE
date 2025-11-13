@@ -1,10 +1,9 @@
 package vn.hust.social.backend.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.annotation.Transactional;
-import vn.hust.social.backend.dto.ForgotPasswordResponse;
 
+import vn.hust.social.backend.dto.LocalRegisterResponse;
 import vn.hust.social.backend.dto.LoginResponse;
 import vn.hust.social.backend.dto.UserDto;
 import vn.hust.social.backend.entity.User;
@@ -37,10 +36,6 @@ public class AuthService {
         this.jwtUtils = jwtUtils;
     }
 
-    private ForgotPasswordResponse buildForgotPasswordResponse(Boolean success, String message) {
-        return new ForgotPasswordResponse(success, message);
-    }
-
     private LoginResponse buildLoginResponse(UserAuth auth) {
         User user = auth.getUser();
 
@@ -58,8 +53,20 @@ public class AuthService {
         return new LoginResponse("Bearer", accessToken, refreshToken, userDto);
     }
 
+    private LocalRegisterResponse buildLocalRegisterResponse(User user) {
+        UserDto userDto = new UserDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getDisplayName(),
+                user.getCreatedAt()
+        );
+
+        return new LocalRegisterResponse(true, "Your account is registered. Please verify your email.", userDto);
+    }
+
     @Transactional
-    public LoginResponse registerLocal(String firstName, String lastName, String displayName, String email, String rawPassword) {
+    public LocalRegisterResponse registerLocal(String firstName, String lastName, String displayName, String email, String rawPassword) {
         if (userAuthRepository.existsByProviderAndEmail(UserAuth.AuthProvider.LOCAL, email)) {
             throw new EmailAlreadyRegisteredException(email);
         }
@@ -75,7 +82,7 @@ public class AuthService {
         userRepository.save(user);
         userAuthRepository.save(auth);
 
-        return buildLoginResponse(auth);
+        return buildLocalRegisterResponse(user);
     }
 
     @Transactional
@@ -100,7 +107,7 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         User user = userAuthRepository.findByProviderAndEmail(UserAuth.AuthProvider.LOCAL, email).get().getUser();
-        if (user.getEmailVerified() == false) {
+        if (!user.getEmailVerified()) {
             throw new EmailNotVerifiedException(email);
         }
 
@@ -119,14 +126,6 @@ public class AuthService {
 
         return buildLoginResponse(auth);
     }
-
-//    public ForgotPasswordResponse forgotPassword(String email) {
-//        if  (!existsEmail(email)) {
-//            return buildForgotPasswordResponse(false, "Email not registered");
-//        } else {
-//
-//        }
-//    }
 
     public boolean existsEmail(String email) {
         return userAuthRepository.existsByEmail(email);

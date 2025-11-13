@@ -5,36 +5,36 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.dto.*;
 import vn.hust.social.backend.service.AuthService;
+import vn.hust.social.backend.service.EmailVerificationService;
 import vn.hust.social.backend.service.M365Service;
 
 import java.util.Map;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
     private final M365Service m365Service;
+    private final EmailVerificationService emailVerificationService;
 
-    public AuthController(AuthService authService, M365Service m365Service) {
+    public AuthController(AuthService authService, M365Service m365Service, EmailVerificationService emailVerificationService) {
         this.authService = authService;
         this.m365Service = m365Service;
-    }
-
-    @GetMapping("/")
-    public String home() {
-        return "Server is running!";
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/register/local")
-    public ResponseEntity<LoginResponse> registerLocal(@RequestBody @Valid LocalRegisterRequest request) {
-        LoginResponse response = authService.registerLocal(
+    public ResponseEntity<LocalRegisterResponse> registerLocal(@RequestBody @Valid LocalRegisterRequest request) {
+        LocalRegisterResponse response = authService.registerLocal(
                 request.getFirstName(),
                 request.getLastName(),
                 request.getDisplayName(),
                 request.getEmail(),
                 request.getPassword()
         );
+        emailVerificationService.sendVerificationEmail(request.getEmail(), request.getDisplayName());
         return ResponseEntity.ok(response);
     }
 
@@ -64,8 +64,13 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-//    @PostMapping("/forgot-password")
-//    public ResponseEntity<?> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
-//
-//    }
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
+        boolean verified = emailVerificationService.verifyEmailToken(token);
+        if (verified) {
+            return ResponseEntity.ok("Email verified successfully!");
+        } else {
+            return ResponseEntity.badRequest().body("Invalid or expired verification token.");
+        }
+    }
 }
