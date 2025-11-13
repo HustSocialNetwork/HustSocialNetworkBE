@@ -25,6 +25,3 @@ replay_pid*
 
 .idea/
 *.iml
-
-application.properties
-application.yml
