@@ -62,16 +62,8 @@ public class UserAuth {
         return provider;
     }
 
-    public String getProviderId() {
-        return email;
-    }
-
     public String getPassword() {
         return password;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
     }
 
     public String getEmail() {

@@ -14,11 +14,22 @@ services:
       - db_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password
 
+  redis:
+    image: redis:7.2
+    container_name: social-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
   app:
     build: .
     container_name: social-backend
     depends_on:
       - db
+      - redis
     ports:
       - "8080:8080"
       - "5005:5005"
@@ -29,3 +40,4 @@ services:
 
 volumes:
   db_data:
+  redis_data:

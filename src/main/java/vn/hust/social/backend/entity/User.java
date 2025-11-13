@@ -1,26 +1,29 @@
 package vn.hust.social.backend.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
+@Getter @Setter
 public class User {
 
     @Id
     @GeneratedValue
-    @Column(columnDefinition = "BINARY(16)") // lưu UUID dưới dạng binary 16 byte, tối ưu DB
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name", nullable = true)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name", nullable = true)
     private String lastName;
 
-    @Column(name = "display_name")
+    @Column(name = "display_name", nullable = false)
     private String displayName;
 
     @Column(name = "avatar_key")
@@ -94,7 +97,9 @@ public class User {
 
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+        this.updatedAt = LocalDateTime.now();
     }
+
     @Override
     public String toString() {
         return String.format(
