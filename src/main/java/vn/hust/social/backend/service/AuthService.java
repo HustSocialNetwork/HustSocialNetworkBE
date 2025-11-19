@@ -3,11 +3,11 @@ package vn.hust.social.backend.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
-import vn.hust.social.backend.dto.LocalRegisterResponse;
-import vn.hust.social.backend.dto.LoginResponse;
-import vn.hust.social.backend.dto.UserDto;
-import vn.hust.social.backend.entity.User;
-import vn.hust.social.backend.entity.UserAuth;
+import vn.hust.social.backend.dto.user.auth.LocalRegisterResponse;
+import vn.hust.social.backend.dto.user.auth.LoginResponse;
+import vn.hust.social.backend.dto.user.UserDto;
+import vn.hust.social.backend.entity.user.User;
+import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.*;
 import vn.hust.social.backend.repository.UserAuthRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -107,7 +107,7 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         User user = userAuthRepository.findByProviderAndEmail(UserAuth.AuthProvider.LOCAL, email).get().getUser();
-        if (!user.getEmailVerified()) {
+        if (!user.isEmailVerified()) {
             throw new EmailNotVerifiedException(email);
         }
 

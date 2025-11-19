@@ -3,11 +3,11 @@ package vn.hust.social.backend.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.hust.social.backend.dto.*;
-import vn.hust.social.backend.entity.Post;
-import vn.hust.social.backend.entity.PostMedia;
-import vn.hust.social.backend.entity.User;
-import vn.hust.social.backend.entity.UserAuth;
+import vn.hust.social.backend.dto.post.*;
+import vn.hust.social.backend.entity.post.Post;
+import vn.hust.social.backend.entity.post.PostMedia;
+import vn.hust.social.backend.entity.user.User;
+import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.repository.PostRepository;
 import vn.hust.social.backend.repository.UserAuthRepository;
 

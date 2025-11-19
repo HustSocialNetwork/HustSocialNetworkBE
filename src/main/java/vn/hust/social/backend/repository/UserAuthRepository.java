@@ -1,8 +1,7 @@
 package vn.hust.social.backend.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import vn.hust.social.backend.entity.User;
-import vn.hust.social.backend.entity.UserAuth;
+import vn.hust.social.backend.entity.user.UserAuth;
 
 import java.util.Optional;
 import java.util.UUID;
