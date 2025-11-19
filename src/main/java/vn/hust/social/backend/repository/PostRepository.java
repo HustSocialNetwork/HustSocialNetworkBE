@@ -1,8 +1,7 @@
 package vn.hust.social.backend.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import vn.hust.social.backend.entity.Post;
-import vn.hust.social.backend.entity.User;
+import vn.hust.social.backend.entity.post.Post;
 
 import java.time.LocalDateTime;
 import java.util.List;

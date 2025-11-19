@@ -4,10 +4,9 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.http.Method;
 import org.apache.commons.compress.utils.FileNameUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import vn.hust.social.backend.dto.UrlForUploadingMediaRequest;
-import vn.hust.social.backend.dto.PresignedUrlForUploadingResponse;
+import vn.hust.social.backend.dto.media.UrlForUploadingMediaRequest;
+import vn.hust.social.backend.dto.media.PresignedUrlForUploadingResponse;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -15,17 +14,11 @@ import java.util.*;
 
 @Service
 public class MediaService {
-    @Value("${minio.credentials.accessKey}")
-    private String accessKey;
-    @Value("${minio.credentials.secretKey}")
-    private String secretKey;
-    @Value("${minio.endpoint}")
-    private String endpoint;
+    private final MinioClient minioClient;
 
-    private final MinioClient minioClient = MinioClient.builder()
-            .endpoint(endpoint)
-            .credentials(accessKey, secretKey)
-            .build();
+    public MediaService(MinioClient minioClient) {
+        this.minioClient = minioClient;
+    }
 
     public List<PresignedUrlForUploadingResponse> getPresignedObjectUrlsForUploading(List<UrlForUploadingMediaRequest> urlForUploadingMediaRequests, String bucketName) {
         try {

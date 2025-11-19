@@ -2,10 +2,9 @@ package vn.hust.social.backend.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import vn.hust.social.backend.entity.User;
+import vn.hust.social.backend.entity.user.User;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository

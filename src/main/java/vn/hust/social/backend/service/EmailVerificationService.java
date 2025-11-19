@@ -3,7 +3,7 @@ package vn.hust.social.backend.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import vn.hust.social.backend.entity.User;
+import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.repository.UserAuthRepository;
 import vn.hust.social.backend.repository.UserRepository;
 
