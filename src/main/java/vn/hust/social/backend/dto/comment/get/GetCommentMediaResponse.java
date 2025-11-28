@@ -1,6 +1,6 @@
-package vn.hust.social.backend.dto.post;
+package vn.hust.social.backend.dto.comment.get;
 
-public record UpdatePostMediaResponse(
+public record GetCommentMediaResponse(
         String objectKey,
         String type,
         String orderIndex,

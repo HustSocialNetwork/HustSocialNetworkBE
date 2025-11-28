@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.post;
+package vn.hust.social.backend.dto.post.get;
 
 public record GetPostMediaResponse(
         String objectKey,

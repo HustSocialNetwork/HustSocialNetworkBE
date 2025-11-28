@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import vn.hust.social.backend.entity.enums.media.MediaType;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "post_media")
 @Getter
@@ -15,7 +17,7 @@ public class PostMedia {
     @Id
     @GeneratedValue
     @Column(columnDefinition = "BINARY(16)", updatable = false, nullable = false)
-    private Long postMediaId;
+    private UUID postMediaId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)

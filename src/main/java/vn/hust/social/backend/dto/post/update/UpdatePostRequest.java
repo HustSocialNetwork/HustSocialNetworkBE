@@ -1,7 +1,6 @@
-package vn.hust.social.backend.dto.post;
+package vn.hust.social.backend.dto.post.update;
 
 import vn.hust.social.backend.entity.enums.post.PostVisibility;
-import vn.hust.social.backend.entity.post.Post;
 
 import java.util.List;
 

@@ -60,6 +60,7 @@ public class Post extends Base {
     }
 
     public Post(User user, String content, PostVisibility visibility) {
+        this.status = PostStatus.ACTIVE;
         this.user = user;
         this.content = content;
         this.visibility = visibility;

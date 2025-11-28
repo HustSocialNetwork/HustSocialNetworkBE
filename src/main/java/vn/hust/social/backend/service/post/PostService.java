@@ -4,12 +4,23 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.dto.post.*;
+import vn.hust.social.backend.dto.post.create.CreatePostMediaRequest;
+import vn.hust.social.backend.dto.post.create.CreatePostRequest;
+import vn.hust.social.backend.dto.post.create.CreatePostResponse;
+import vn.hust.social.backend.dto.post.delete.DeletePostResponse;
+import vn.hust.social.backend.dto.post.get.GetPostMediaResponse;
+import vn.hust.social.backend.dto.post.get.GetPostResponse;
+import vn.hust.social.backend.dto.post.update.UpdatePostMediaRequest;
+import vn.hust.social.backend.dto.post.update.UpdatePostMediaResponse;
+import vn.hust.social.backend.dto.post.update.UpdatePostRequest;
+import vn.hust.social.backend.dto.post.update.UpdatePostResponse;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
 import vn.hust.social.backend.entity.enums.post.PostVisibility;
 import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.post.PostMedia;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
+import vn.hust.social.backend.mapper.PostMapper;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.user.UserAuthRepository;
 import vn.hust.social.backend.service.media.MediaService;
@@ -26,6 +37,7 @@ public class PostService {
     private final UserAuthRepository userAuthRepository;
     private final MediaService mediaService;
     private final FriendshipService friendshipService;
+    private final PostMapper postMapper;
 
     @Transactional
     public GetPostResponse getPost (String postId, String email) {
@@ -48,8 +60,9 @@ public class PostService {
             String orderIndex = String.valueOf(mediaList.get(i).getOrderIndex());
             postMedias.add(new GetPostMediaResponse(objectKey, presignedUrlForDownloading, type, orderIndex));
         }
+        PostDTO postDTO = postMapper.toDTO(post);
 
-        return new GetPostResponse(post, postMedias);
+        return new GetPostResponse(postDTO, postMedias);
     }
 
     @Transactional
@@ -62,8 +75,9 @@ public class PostService {
             post.getMediaList().add(postmedia);
         }
         postRepository.save(post);
+        PostDTO postDTO = postMapper.toDTO(post);
 
-        return new CreatePostResponse(post.getPostId());
+        return new CreatePostResponse(postDTO);
     }
 
     @Transactional
@@ -106,7 +120,8 @@ public class PostService {
                 postMedias.add(new UpdatePostMediaResponse(objectKey, presignedUrlForDownloading, type, orderIndex));
             }
 
-            return new UpdatePostResponse(post, postMedias);
+            PostDTO postDTO = postMapper.toDTO(post);
+            return new UpdatePostResponse(postDTO, postMedias);
         } else throw new RuntimeException("User not authorized");
     }
 
@@ -122,7 +137,9 @@ public class PostService {
         if (userID.equals(userId)) {
             // dùng cách này vì xóa được cả PostMedia
             postRepository.delete(post);
-            new DeletePostResponse(post);
+            PostDTO postDTO = postMapper.toDTO(post);
+
+            new DeletePostResponse(postDTO);
         } else throw new RuntimeException("User not authorized");
     }
 

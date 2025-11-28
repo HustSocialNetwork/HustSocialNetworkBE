@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.post;
+package vn.hust.social.backend.dto.post.create;
 
 import vn.hust.social.backend.entity.enums.post.PostVisibility;
 

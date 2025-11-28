@@ -1,6 +1,4 @@
-package vn.hust.social.backend.dto.comment;
-
-import vn.hust.social.backend.dto.post.UpdatePostMediaRequest;
+package vn.hust.social.backend.dto.comment.update;
 
 import java.util.List;
 

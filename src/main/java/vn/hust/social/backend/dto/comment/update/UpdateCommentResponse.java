@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.comment;
+package vn.hust.social.backend.dto.comment.update;
 
 import vn.hust.social.backend.entity.comment.Comment;
 

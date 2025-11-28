@@ -1,10 +1,9 @@
-package vn.hust.social.backend.dto.comment;
+package vn.hust.social.backend.dto.post.create;
 
 import vn.hust.social.backend.entity.enums.media.MediaType;
 
-public record CreateCommentMediaRequest(
+public record CreatePostMediaRequest(
         String objectKey,
         MediaType type,
         int orderIndex
-) {
-}
+) {}

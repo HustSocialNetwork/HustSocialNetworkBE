@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.comment;
+package vn.hust.social.backend.dto.comment.create;
 
 import java.util.List;
 
