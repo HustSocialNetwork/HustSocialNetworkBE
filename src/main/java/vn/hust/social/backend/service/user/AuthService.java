@@ -1,4 +1,4 @@
-package vn.hust.social.backend.service;
+package vn.hust.social.backend.service.user;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,10 +9,10 @@ import vn.hust.social.backend.dto.user.UserDto;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.*;
-import vn.hust.social.backend.repository.UserAuthRepository;
+import vn.hust.social.backend.repository.user.UserAuthRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import vn.hust.social.backend.repository.UserRepository;
+import vn.hust.social.backend.repository.user.UserRepository;
 import vn.hust.social.backend.security.JwtUtils;
 
 @Slf4j

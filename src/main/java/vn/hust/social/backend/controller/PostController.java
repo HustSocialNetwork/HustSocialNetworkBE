@@ -1,7 +1,7 @@
 package vn.hust.social.backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,19 +11,14 @@ import vn.hust.social.backend.dto.post.GetPostResponse;
 import vn.hust.social.backend.dto.post.UpdatePostRequest;
 import vn.hust.social.backend.security.JwtHeaderUtils;
 import vn.hust.social.backend.security.JwtUtils;
-import vn.hust.social.backend.service.PostService;
+import vn.hust.social.backend.service.post.PostService;
 
 @RestController
 @RequestMapping("/api/posts")
+@RequiredArgsConstructor
 public class PostController {
-    @Autowired
-    private JwtUtils jwtUtils;
-
+    private final JwtUtils jwtUtils;
     private final PostService postService;
-
-    public PostController(PostService postService) {
-        this.postService = postService;
-    }
 
     @GetMapping("/{postId}")
     public ResponseEntity<GetPostResponse> getPost(@PathVariable String postId, HttpServletRequest request) {

@@ -12,6 +12,7 @@ import vn.hust.social.backend.entity.user.User;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -22,7 +23,7 @@ import java.util.List;
 public class Comment extends Base {
     @Id
     @GeneratedValue
-    private int id;
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id",  nullable = false)
@@ -44,7 +45,7 @@ public class Comment extends Base {
 
     protected Comment() {};
 
-    public Comment(User user, Post post, String content, Integer likesCount) {
+    public Comment(User user, Post post, String content) {
         this.user = user;
         this.post = post;
         this.content = content;

@@ -1,4 +1,4 @@
-package vn.hust.social.backend.service;
+package vn.hust.social.backend.service.media;
 
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;

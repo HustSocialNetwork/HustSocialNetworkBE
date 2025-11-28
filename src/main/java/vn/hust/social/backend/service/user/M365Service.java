@@ -1,4 +1,4 @@
-package vn.hust.social.backend.service;
+package vn.hust.social.backend.service.user;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;

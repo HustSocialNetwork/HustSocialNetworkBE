@@ -8,9 +8,9 @@ import lombok.Setter;
 import vn.hust.social.backend.entity.enums.media.MediaType;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, of = "{objectKey}")
 @Entity
-@Table(name = "post")
+@Table(name = "comment_media")
 @Getter
 @Setter
 public class CommentMedia {

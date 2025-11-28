@@ -1,11 +1,11 @@
-package vn.hust.social.backend.service;
+package vn.hust.social.backend.service.user;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import vn.hust.social.backend.entity.user.User;
-import vn.hust.social.backend.repository.UserAuthRepository;
-import vn.hust.social.backend.repository.UserRepository;
+import vn.hust.social.backend.repository.user.UserAuthRepository;
+import vn.hust.social.backend.repository.user.UserRepository;
 
 import java.time.Duration;
 import java.util.UUID;

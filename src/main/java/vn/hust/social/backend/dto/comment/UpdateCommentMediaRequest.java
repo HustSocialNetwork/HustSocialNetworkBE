@@ -1,11 +1,11 @@
-package vn.hust.social.backend.dto.post;
+package vn.hust.social.backend.dto.comment;
 
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
 import vn.hust.social.backend.entity.enums.media.MediaType;
 
-public record UpdatePostMediaRequest(
-        String objectKey,
+public record UpdateCommentMediaRequest(
         MediaType type,
+        String objectKey,
         int orderIndex,
         MediaOperation operation
 ) {

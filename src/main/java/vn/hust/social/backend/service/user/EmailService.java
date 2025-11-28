@@ -1,4 +1,4 @@
-package vn.hust.social.backend.service;
+package vn.hust.social.backend.service.user;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

@@ -4,7 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.dto.media.UrlForUploadingMediaRequest;
 import vn.hust.social.backend.dto.media.PresignedUrlForUploadingResponse;
-import vn.hust.social.backend.service.MediaService;
+import vn.hust.social.backend.service.media.MediaService;
 
 import java.util.List;
 

@@ -4,9 +4,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.dto.user.auth.*;
-import vn.hust.social.backend.service.AuthService;
-import vn.hust.social.backend.service.EmailVerificationService;
-import vn.hust.social.backend.service.M365Service;
+import vn.hust.social.backend.service.user.AuthService;
+import vn.hust.social.backend.service.user.EmailVerificationService;
+import vn.hust.social.backend.service.user.M365Service;
 
 import java.util.Map;
 

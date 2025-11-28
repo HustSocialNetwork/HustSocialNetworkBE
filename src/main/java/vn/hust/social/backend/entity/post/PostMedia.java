@@ -1,6 +1,7 @@
 package vn.hust.social.backend.entity.post;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import vn.hust.social.backend.entity.enums.media.MediaType;
@@ -9,7 +10,13 @@ import vn.hust.social.backend.entity.enums.media.MediaType;
 @Table(name = "post_media")
 @Getter
 @Setter
+@EqualsAndHashCode(of = {"postMediaId"})
 public class PostMedia {
+    @Id
+    @GeneratedValue
+    @Column(columnDefinition = "BINARY(16)", updatable = false, nullable = false)
+    private Long postMediaId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
@@ -17,7 +24,6 @@ public class PostMedia {
     @Column(name = "type", nullable = false)
     private MediaType type;
 
-    @Id
     @Column(name = "object_key", nullable = false)
     private String objectKey;
 
