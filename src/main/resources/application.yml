@@ -38,7 +38,7 @@ spring:
 
 jwt:
   secret: 6a915cc818ce759698ca2eaffcd841b2a19a72e3c00b421c38a6e0150c3cfd68
-  access-expiration: 900000
+  access-expiration: 86400000
   refresh-expiration: 604800000
 
 server:

@@ -5,8 +5,8 @@ import vn.hust.social.backend.entity.enums.media.MediaType;
 import java.util.UUID;
 
 public record PostMediaDTO(
-        UUID postMediaDTO,
-        MediaType mediaType,
+        UUID postMediaId,
+        MediaType type,
         String objectKey,
         int orderIndex
 ) {

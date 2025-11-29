@@ -10,7 +10,7 @@ import vn.hust.social.backend.entity.enums.media.MediaType;
 import java.util.UUID;
 
 @Data
-@EqualsAndHashCode(callSuper = false, of = "{commentMediaId}")
+@EqualsAndHashCode(callSuper = false, of = "commentMediaId")
 @Entity
 @Table(name = "comment_media")
 @Getter

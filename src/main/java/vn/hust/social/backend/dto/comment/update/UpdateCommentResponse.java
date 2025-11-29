@@ -1,8 +1,8 @@
 package vn.hust.social.backend.dto.comment.update;
 
-import vn.hust.social.backend.entity.comment.Comment;
+import vn.hust.social.backend.dto.comment.CommentDTO;
 
 public record UpdateCommentResponse(
-        Comment comment
+        CommentDTO comment
 ) {
 }

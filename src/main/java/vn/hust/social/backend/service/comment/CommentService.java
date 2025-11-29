@@ -3,16 +3,15 @@ package vn.hust.social.backend.service.comment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.hust.social.backend.dto.comment.CommentDTO;
 import vn.hust.social.backend.dto.comment.create.CreateCommentMediaRequest;
 import vn.hust.social.backend.dto.comment.create.CreateCommentRequest;
 import vn.hust.social.backend.dto.comment.create.CreateCommentResponse;
-import vn.hust.social.backend.dto.comment.get.GetCommentMediaResponse;
-import vn.hust.social.backend.dto.comment.get.GetCommentResponse;
 import vn.hust.social.backend.dto.comment.get.GetCommentsResponse;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentMediaRequest;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentRequest;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentResponse;
-import vn.hust.social.backend.dto.user.UserDto;
+import vn.hust.social.backend.dto.media.CommentMediaDTO;
 import vn.hust.social.backend.entity.comment.Comment;
 import vn.hust.social.backend.entity.comment.CommentMedia;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
@@ -20,10 +19,11 @@ import vn.hust.social.backend.entity.enums.post.PostVisibility;
 import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
+import vn.hust.social.backend.mapper.CommentMapper;
+import vn.hust.social.backend.repository.comment.CommentMediaRepository;
 import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.user.UserAuthRepository;
-import vn.hust.social.backend.service.media.MediaService;
 import vn.hust.social.backend.service.post.PostService;
 import vn.hust.social.backend.service.user.FriendshipService;
 
@@ -36,70 +36,33 @@ import java.util.UUID;
 public class CommentService {
     private final PostRepository postRepository;
     private final UserAuthRepository userAuthRepository;
-    private final MediaService mediaService;
     private final FriendshipService friendshipService;
     private final CommentRepository commentRepository;
+    private final CommentMediaRepository commentMediaRepository;
     private final PostService postService;
+    private final CommentMapper commentMapper;
 
     @Transactional
     public GetCommentsResponse getComments(String postId, String email) {
         UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
-
         UUID postID = UUID.fromString(postId);
         Post post = postRepository.findByPostId(postID).orElseThrow(() -> new RuntimeException("Post not found"));
 
         if (!canViewComments(userAuth.getUser(), post)) throw new RuntimeException("User not permitted to view comments");
 
         List<Comment> comments = post.getComments();
-        List<GetCommentResponse> getCommentResponseList = new ArrayList<>();
+        List<CommentDTO> commentDTOs = new ArrayList<>();
 
         for (Comment comment : comments) {
-            List<CommentMedia> mediaList = comment.getMediaList();
-            List<String> objectKeys = mediaList.stream().map(CommentMedia::getObjectKey).toList();
-            List<String> presignedUrlsForDownloading = mediaService.getPresignedObjectUrlsForDownloading(objectKeys, "comment");
-            List<GetCommentMediaResponse> getCommentMediaResponseList = new ArrayList<>();
-            for (int i = 0 ; i < presignedUrlsForDownloading.size(); i++){
-                getCommentMediaResponseList.add(new GetCommentMediaResponse(
-                        mediaList.get(i).getObjectKey(),
-                        mediaList.get(i).getType().toString(),
-                        mediaList.get(i).getOrderIndex().toString(),
-                        presignedUrlsForDownloading.get(i)
-                ));
-            }
-            getCommentResponseList.add(new GetCommentResponse(
-                    comment.getId(),
-                    new UserDto(
-                            comment.getUser().getId(),
-                            comment.getUser().getFirstName(),
-                            comment.getUser().getLastName(),
-                            comment.getUser().getDisplayName(),
-                            comment.getUser().getCreatedAt()
-                    ),
-                    comment.getContent(),
-                    comment.getLikesCount(),
-                    getCommentMediaResponseList
-            ));
+            CommentDTO commentDTO = commentMapper.toDTO(comment);
+            commentDTOs.add(commentDTO);
         }
 
-        return new GetCommentsResponse(getCommentResponseList);
+        return new GetCommentsResponse(commentDTOs);
     }
 
     @Transactional
-    public void deleteComment(String commentId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
-        String userId = userAuth.getUser().getId().toString();
-
-        UUID commentID = UUID.fromString(commentId);
-        Comment comment = commentRepository.getCommentById(commentID);
-        String userID = comment.getUser().getId().toString();
-
-        if (userId.equals(userID)) {
-            commentRepository.delete(comment);
-        } else throw new RuntimeException("User not authorized");
-    }
-
-    @Transactional
-    public CreateCommentResponse postComment(CreateCommentRequest createCommentRequest, String email) {
+    public CreateCommentResponse createComment(CreateCommentRequest createCommentRequest, String email) {
         Post post = postRepository.findByPostId(UUID.fromString(createCommentRequest.postId())).orElseThrow(() -> new RuntimeException("Post not found"));
         UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
         User commenter =  userAuth.getUser();
@@ -115,19 +78,20 @@ public class CommentService {
                     createCommentMediaRequest.orderIndex()
             ));
         }
+        comment.setPost(post);
         post.getComments().add(comment);
-        postRepository.save(post);
+        Comment savedComment = commentRepository.saveAndFlush(comment);
+        CommentDTO commentDTO = commentMapper.toDTO(savedComment);
 
-        return new CreateCommentResponse(comment);
+        return new CreateCommentResponse(commentDTO);
     }
 
     @Transactional
     public UpdateCommentResponse updateComment(UpdateCommentRequest updateCommentRequest, String commentId, String email) {
         UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
         String userId = userAuth.getUser().getId().toString();
-
         UUID commentID = UUID.fromString(commentId);
-        Comment comment = commentRepository.getCommentById(commentID);
+        Comment comment = commentRepository.findCommentById(commentID);
         String userID = comment.getUser().getId().toString();
 
         if (userId.equals(userID)) {
@@ -136,18 +100,34 @@ public class CommentService {
 
             // change media list
             for (UpdateCommentMediaRequest updateCommentMediaRequest : updateCommentRequest.updateCommentMediaRequests()) {
-                CommentMedia commentMedia = new CommentMedia(comment, updateCommentMediaRequest.type(), updateCommentMediaRequest.objectKey(), updateCommentMediaRequest.orderIndex());
+
                 if (updateCommentMediaRequest.operation() == MediaOperation.DELETE) {
+                    CommentMedia commentMedia = commentMediaRepository.getCommentMediaByObjectKey(updateCommentMediaRequest.objectKey());
                     comment.getMediaList().remove(commentMedia);
                     commentMedia.setComment(null);
                 }
                 if (updateCommentMediaRequest.operation() == MediaOperation.ADD) {
+                    CommentMedia commentMedia = new CommentMedia(comment, updateCommentMediaRequest.type(), updateCommentMediaRequest.objectKey(), updateCommentMediaRequest.orderIndex());
                     comment.getMediaList().add(commentMedia);
                 }
             }
-            commentRepository.save(comment);
+            Comment savedComment = commentRepository.saveAndFlush(comment);
+            CommentDTO commentDTO = commentMapper.toDTO(savedComment);
 
-            return new UpdateCommentResponse(comment);
+            return new UpdateCommentResponse(commentDTO);
+        } else throw new RuntimeException("User not authorized");
+    }
+
+    @Transactional
+    public void deleteComment(String commentId, String email) {
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
+        String userId = userAuth.getUser().getId().toString();
+        UUID commentID = UUID.fromString(commentId);
+        Comment comment = commentRepository.getCommentById(commentID);
+        String userID = comment.getUser().getId().toString();
+
+        if (userId.equals(userID)) {
+            commentRepository.delete(comment);
         } else throw new RuntimeException("User not authorized");
     }
 

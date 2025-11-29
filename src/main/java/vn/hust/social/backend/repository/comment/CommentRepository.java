@@ -10,4 +10,6 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     List<Comment> getCommentsByPostPostId(UUID postPostId);
 
     Comment getCommentById(UUID id);
+    
+    Comment findCommentById(UUID id);
 }

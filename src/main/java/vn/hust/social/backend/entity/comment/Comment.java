@@ -23,6 +23,7 @@ import java.util.UUID;
 public class Comment extends Base {
     @Id
     @GeneratedValue
+    @Column(columnDefinition = "BINARY(16)", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -43,7 +44,7 @@ public class Comment extends Base {
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CommentMedia> mediaList =  new ArrayList<>();
 
-    protected Comment() {};
+    protected Comment() {}
 
     public Comment(User user, Post post, String content) {
         this.user = user;

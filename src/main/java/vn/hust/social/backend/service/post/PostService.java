@@ -8,10 +8,8 @@ import vn.hust.social.backend.dto.post.create.CreatePostMediaRequest;
 import vn.hust.social.backend.dto.post.create.CreatePostRequest;
 import vn.hust.social.backend.dto.post.create.CreatePostResponse;
 import vn.hust.social.backend.dto.post.delete.DeletePostResponse;
-import vn.hust.social.backend.dto.post.get.GetPostMediaResponse;
 import vn.hust.social.backend.dto.post.get.GetPostResponse;
 import vn.hust.social.backend.dto.post.update.UpdatePostMediaRequest;
-import vn.hust.social.backend.dto.post.update.UpdatePostMediaResponse;
 import vn.hust.social.backend.dto.post.update.UpdatePostRequest;
 import vn.hust.social.backend.dto.post.update.UpdatePostResponse;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
@@ -23,11 +21,8 @@ import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.mapper.PostMapper;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.user.UserAuthRepository;
-import vn.hust.social.backend.service.media.MediaService;
 import vn.hust.social.backend.service.user.FriendshipService;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor @Service
@@ -35,34 +30,20 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserAuthRepository userAuthRepository;
-    private final MediaService mediaService;
     private final FriendshipService friendshipService;
     private final PostMapper postMapper;
 
     @Transactional
     public GetPostResponse getPost (String postId, String email) {
         UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
-
         UUID postID = UUID.fromString(postId);
         Post post = postRepository.findByPostId(postID).orElseThrow(() -> new RuntimeException("Post not found"));
-        List<GetPostMediaResponse> postMedias = new ArrayList<>();
 
         if (!canViewPost(userAuth.getUser(), post)) throw new RuntimeException("User not permitted to view post");
 
-        List<PostMedia> mediaList = post.getMediaList();
-        List<String> objectKeys = mediaList.stream().map(PostMedia::getObjectKey).toList();
-        List<String> presignedUrlsForDownloading = mediaService.getPresignedObjectUrlsForDownloading(objectKeys, "post");
-
-        for (int i=0; i<presignedUrlsForDownloading.size(); i++) {
-            String objectKey = mediaList.get(i).getObjectKey();
-            String presignedUrlForDownloading = presignedUrlsForDownloading.get(i);
-            String type = mediaList.get(i).getType().toString();
-            String orderIndex = String.valueOf(mediaList.get(i).getOrderIndex());
-            postMedias.add(new GetPostMediaResponse(objectKey, presignedUrlForDownloading, type, orderIndex));
-        }
         PostDTO postDTO = postMapper.toDTO(post);
 
-        return new GetPostResponse(postDTO, postMedias);
+        return new GetPostResponse(postDTO);
     }
 
     @Transactional
@@ -70,11 +51,13 @@ public class PostService {
         UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
         User user = userAuth.getUser();
         Post post = new Post(user, createPostRequest.content(), createPostRequest.visibility());
+
         for (CreatePostMediaRequest postMedia : createPostRequest.createPostMediaRequests()) {
             PostMedia postmedia = new PostMedia(post, postMedia.type(), postMedia.objectKey(), postMedia.orderIndex());
             post.getMediaList().add(postmedia);
         }
-        postRepository.save(post);
+
+        postRepository.saveAndFlush(post);
         PostDTO postDTO = postMapper.toDTO(post);
 
         return new CreatePostResponse(postDTO);
@@ -88,7 +71,6 @@ public class PostService {
         UUID postID = UUID.fromString(postId);
         Post post = postRepository.findByPostId(postID).orElseThrow(() -> new RuntimeException("Post not found"));
         String userID = post.getUser().getId().toString();
-        List<UpdatePostMediaResponse> postMedias = new ArrayList<>();
 
         if (userID.equals(userId)) {
             // change content and visibility
@@ -108,20 +90,8 @@ public class PostService {
             }
             postRepository.save(post);
 
-            List<PostMedia> mediaList = post.getMediaList();
-            List<String> objectKeys = mediaList.stream().map(PostMedia::getObjectKey).toList();
-            List<String> presignedUrlsForDownloading = mediaService.getPresignedObjectUrlsForDownloading(objectKeys, "post");
-
-            for (int i=0; i<presignedUrlsForDownloading.size(); i++) {
-                String objectKey = mediaList.get(i).getObjectKey();
-                String presignedUrlForDownloading = presignedUrlsForDownloading.get(i);
-                String type = mediaList.get(i).getType().toString();
-                String orderIndex = String.valueOf(mediaList.get(i).getOrderIndex());
-                postMedias.add(new UpdatePostMediaResponse(objectKey, presignedUrlForDownloading, type, orderIndex));
-            }
-
             PostDTO postDTO = postMapper.toDTO(post);
-            return new UpdatePostResponse(postDTO, postMedias);
+            return new UpdatePostResponse(postDTO);
         } else throw new RuntimeException("User not authorized");
     }
 

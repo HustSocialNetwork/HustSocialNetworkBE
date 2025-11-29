@@ -6,7 +6,6 @@ import vn.hust.social.backend.entity.post.Post;
 import java.util.List;
 
 public record GetPostResponse(
-        PostDTO postDTO,
-        List<GetPostMediaResponse> postMedias
+        PostDTO post
 ) {
 }

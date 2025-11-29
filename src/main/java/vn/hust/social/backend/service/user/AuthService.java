@@ -5,7 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import vn.hust.social.backend.dto.user.auth.LocalRegisterResponse;
 import vn.hust.social.backend.dto.user.auth.LoginResponse;
-import vn.hust.social.backend.dto.user.UserDto;
+import vn.hust.social.backend.dto.user.UserDTO;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.*;
@@ -42,7 +42,7 @@ public class AuthService {
         String accessToken = jwtUtils.generateAccessToken(auth.getEmail());
         String refreshToken = jwtUtils.generateRefreshToken(auth.getEmail());
 
-        UserDto userDto = new UserDto(
+        UserDTO userDto = new UserDTO(
                 user.getId(),
                 user.getFirstName(),
                 user.getLastName(),
@@ -54,7 +54,7 @@ public class AuthService {
     }
 
     private LocalRegisterResponse buildLocalRegisterResponse(User user) {
-        UserDto userDto = new UserDto(
+        UserDTO userDto = new UserDTO(
                 user.getId(),
                 user.getFirstName(),
                 user.getLastName(),

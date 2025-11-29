@@ -30,19 +30,19 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<CreateCommentResponse> createComment (@RequestBody CreateCommentRequest createCommentRequest, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(commentService.postComment(createCommentRequest, email));
-    }
-
-    @DeleteMapping("/{commentId}")
-    public ResponseEntity<Void> deleteComments (@PathVariable("commentId") String commentId, HttpServletRequest request) {
-        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        commentService.deleteComment(commentId, email);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(commentService.createComment(createCommentRequest, email));
     }
 
     @PutMapping("/{commentId}")
     public ResponseEntity<UpdateCommentResponse> updateComment (@RequestBody UpdateCommentRequest updateCommentRequest, @PathVariable("commentId") String commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ResponseEntity.ok(commentService.updateComment(updateCommentRequest, commentId, email));
+    }
+
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<Void> deleteComment (@PathVariable("commentId") String commentId, HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        commentService.deleteComment(commentId, email);
+        return ResponseEntity.ok().build();
     }
 }
