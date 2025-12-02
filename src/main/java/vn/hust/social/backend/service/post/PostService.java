@@ -21,7 +21,7 @@ import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.mapper.PostMapper;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.user.UserAuthRepository;
-import vn.hust.social.backend.service.user.FriendshipService;
+import vn.hust.social.backend.service.user.auth.FriendshipService;
 
 import java.util.UUID;
 

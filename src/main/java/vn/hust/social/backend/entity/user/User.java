@@ -3,8 +3,6 @@ package vn.hust.social.backend.entity.user;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 import vn.hust.social.backend.entity.Base;
 
 import java.util.UUID;
@@ -13,7 +11,6 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "users")
-@Getter @Setter
 public class User extends Base {
 
     @Id
@@ -33,8 +30,21 @@ public class User extends Base {
     @Column(name = "avatar_key")
     private String avatarKey;
 
+    @Column(name = "background_key")
+    private String backgroundKey;
+
+    @Column(length = 200)
+    private String bio;
+
+    @Column(name = "follower_count")
+    private Integer followerCount = 0;
+
+    @Column(name = "following")
+    private Integer followingCount = 0;
+
     @Column(name = "email_verified")
     private boolean emailVerified;
+
     protected User() {
         // Default JPA constructor
     }

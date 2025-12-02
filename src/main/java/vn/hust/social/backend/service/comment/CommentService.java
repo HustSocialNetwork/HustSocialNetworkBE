@@ -11,7 +11,6 @@ import vn.hust.social.backend.dto.comment.get.GetCommentsResponse;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentMediaRequest;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentRequest;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentResponse;
-import vn.hust.social.backend.dto.media.CommentMediaDTO;
 import vn.hust.social.backend.entity.comment.Comment;
 import vn.hust.social.backend.entity.comment.CommentMedia;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
@@ -25,7 +24,7 @@ import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.user.UserAuthRepository;
 import vn.hust.social.backend.service.post.PostService;
-import vn.hust.social.backend.service.user.FriendshipService;
+import vn.hust.social.backend.service.user.auth.FriendshipService;
 
 import java.util.ArrayList;
 import java.util.List;

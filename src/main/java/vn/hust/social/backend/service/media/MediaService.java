@@ -3,32 +3,37 @@ package vn.hust.social.backend.service.media;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.http.Method;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.springframework.stereotype.Service;
-import vn.hust.social.backend.dto.media.UrlForUploadingMediaRequest;
-import vn.hust.social.backend.dto.media.PresignedUrlForUploadingResponse;
+import vn.hust.social.backend.dto.media.download.DownloadMediaRequest;
+import vn.hust.social.backend.dto.media.download.DownloadMediasRequest;
+import vn.hust.social.backend.dto.media.download.DownloadMediasResponse;
+import vn.hust.social.backend.dto.media.upload.UploadMediasRequest;
+import vn.hust.social.backend.dto.media.upload.UploadMediasResponse;
+import vn.hust.social.backend.entity.enums.media.MediaOperation;
+import vn.hust.social.backend.repository.user.UserAuthRepository;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class MediaService {
     private final MinioClient minioClient;
+    private final UserAuthRepository userAuthRepository;
 
-    public MediaService(MinioClient minioClient) {
-        this.minioClient = minioClient;
-    }
-
-    public List<PresignedUrlForUploadingResponse> getPresignedObjectUrlsForUploading(List<UrlForUploadingMediaRequest> urlForUploadingMediaRequests, String bucketName) {
+    public List<UploadMediasResponse> getPresignedObjectUrlsForUploading(List<UploadMediasRequest> uploadMediasRequests, String bucketName, String email) {
         try {
-            List<PresignedUrlForUploadingResponse> getPresignedObjectUrlsForUploadingResponse = new ArrayList<>();
-            for (UrlForUploadingMediaRequest urlForUploadingMediaRequest : urlForUploadingMediaRequests) {
+            userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+            List<UploadMediasResponse> getPresignedObjectUrlsForUploadingResponse = new ArrayList<>();
+            for (UploadMediasRequest uploadMediasRequest : uploadMediasRequests) {
                 Map<String, String> reqParams = new HashMap<>();
                 reqParams.put("response-content-type", "application/json");
                 String date = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-                String fileExtention = FileNameUtils.getExtension(urlForUploadingMediaRequest.name());
-                String objectKey = date + "/" + urlForUploadingMediaRequest.type() + "/" + UUID.randomUUID() + "." + fileExtention;
+                String fileExtension = FileNameUtils.getExtension(uploadMediasRequest.name());
+                String objectKey = date + "/" + uploadMediasRequest.type() + "/" + UUID.randomUUID() + "." + fileExtension;
 
                 String presignedUrlForUploading =  minioClient.getPresignedObjectUrl(
                         GetPresignedObjectUrlArgs.builder()
@@ -39,8 +44,8 @@ public class MediaService {
                                 .extraQueryParams(reqParams)
                                 .build()
                 );
-                PresignedUrlForUploadingResponse presignedUrlForUploadingResponse = new PresignedUrlForUploadingResponse(objectKey, presignedUrlForUploading, "add");
-                getPresignedObjectUrlsForUploadingResponse.add(presignedUrlForUploadingResponse);
+                UploadMediasResponse uploadMediasResponse = new UploadMediasResponse(objectKey, presignedUrlForUploading, MediaOperation.ADD);
+                getPresignedObjectUrlsForUploadingResponse.add(uploadMediasResponse);
             }
 
             return getPresignedObjectUrlsForUploadingResponse;
@@ -49,11 +54,13 @@ public class MediaService {
         }
     }
 
-    public List<String> getPresignedObjectUrlsForDownloading(List<String> objectKeys, String bucketName) {
+    public DownloadMediasResponse getPresignedObjectUrlsForDownloading(List<DownloadMediaRequest> downloadMediaRequests, String bucketName, String email) {
         // lấy vào 1 mảng gồm các objectKey ấy
         try {
+            userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
             List<String> presignedUrlsForDownloading = new ArrayList<>();
-            for (String objectKey : objectKeys) {
+            for (DownloadMediaRequest downloadMediaRequest : downloadMediaRequests) {
+                String objectKey = downloadMediaRequest.objectKey();
                 Map<String, String> reqParams = new HashMap<>();
                 reqParams.put("response-content-type", "application/json");
 
@@ -68,7 +75,7 @@ public class MediaService {
                 );
                 presignedUrlsForDownloading.add(presignedUrlForDownloading);
             }
-            return presignedUrlsForDownloading;
+            return new DownloadMediasResponse(presignedUrlsForDownloading);
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate presigned URL", e);
         }

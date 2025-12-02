@@ -1,4 +1,4 @@
-package vn.hust.social.backend.service.user;
+package vn.hust.social.backend.service.user.auth;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

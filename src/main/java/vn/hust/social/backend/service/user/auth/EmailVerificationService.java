@@ -1,4 +1,4 @@
-package vn.hust.social.backend.service.user;
+package vn.hust.social.backend.service.user.auth;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;

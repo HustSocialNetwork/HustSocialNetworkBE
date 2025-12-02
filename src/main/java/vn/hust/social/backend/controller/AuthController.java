@@ -1,29 +1,24 @@
 package vn.hust.social.backend.controller;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.dto.user.auth.*;
-import vn.hust.social.backend.service.user.AuthService;
-import vn.hust.social.backend.service.user.EmailVerificationService;
-import vn.hust.social.backend.service.user.M365Service;
+import vn.hust.social.backend.service.user.auth.AuthService;
+import vn.hust.social.backend.service.user.auth.EmailVerificationService;
+import vn.hust.social.backend.service.user.auth.M365Service;
 
 import java.util.Map;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final M365Service m365Service;
     private final EmailVerificationService emailVerificationService;
-
-    public AuthController(AuthService authService, M365Service m365Service, EmailVerificationService emailVerificationService) {
-        this.authService = authService;
-        this.m365Service = m365Service;
-        this.emailVerificationService = emailVerificationService;
-    }
 
     @PostMapping("/register/local")
     public ResponseEntity<LocalRegisterResponse> registerLocal(@RequestBody @Valid LocalRegisterRequest request) {
