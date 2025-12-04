@@ -2,9 +2,8 @@ package vn.hust.social.backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.post.create.CreatePostRequest;
 import vn.hust.social.backend.dto.post.create.CreatePostResponse;
 import vn.hust.social.backend.dto.post.get.GetPostResponse;
@@ -22,28 +21,27 @@ public class PostController {
     private final PostService postService;
 
     @GetMapping("/{postId}")
-    public ResponseEntity<GetPostResponse> getPost(@PathVariable String postId, HttpServletRequest request) {
+    public ApiResponse<GetPostResponse> getPost(@PathVariable String postId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(postService.getPost(postId, email));
+        return ApiResponse.success(postService.getPost(postId, email));
     }
 
     @PostMapping
-    public ResponseEntity<CreatePostResponse> createPost(@RequestBody CreatePostRequest createPostRequest, HttpServletRequest request) {
+    public ApiResponse<CreatePostResponse> createPost(@RequestBody CreatePostRequest createPostRequest, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(postService.createPost(createPostRequest, email));
+        return ApiResponse.success(postService.createPost(createPostRequest, email));
     }
 
     @PutMapping("/{postId}")
-    public ResponseEntity<UpdatePostResponse> updatePost(@PathVariable String postId, @RequestBody UpdatePostRequest updatePostRequest, HttpServletRequest request) {
+    public ApiResponse<UpdatePostResponse> updatePost(@PathVariable String postId, @RequestBody UpdatePostRequest updatePostRequest, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(postService.updatePost(postId, updatePostRequest, email));
+        return ApiResponse.success(postService.updatePost(postId, updatePostRequest, email));
     }
 
     @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable String postId, HttpServletRequest request) {
+    public ApiResponse<Void> deletePost(@PathVariable String postId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         postService.deletePost(postId, email);
-        return ResponseEntity.noContent().build();
+        return ApiResponse.success(null);
     }
 }

@@ -3,8 +3,8 @@ package vn.hust.social.backend.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.comment.create.CreateCommentRequest;
 import vn.hust.social.backend.dto.comment.create.CreateCommentResponse;
 import vn.hust.social.backend.dto.comment.get.GetCommentsResponse;
@@ -22,27 +22,27 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping("/{postId}")
-    public ResponseEntity<GetCommentsResponse> getComments (@PathVariable("postId") String postId, HttpServletRequest request) {
+    public ApiResponse<GetCommentsResponse> getComments (@PathVariable("postId") String postId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(commentService.getComments(postId, email));
+        return ApiResponse.success(commentService.getComments(postId, email));
     }
 
     @PostMapping
-    public ResponseEntity<CreateCommentResponse> createComment (@RequestBody CreateCommentRequest createCommentRequest, HttpServletRequest request) {
+    public ApiResponse<CreateCommentResponse> createComment (@RequestBody CreateCommentRequest createCommentRequest, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(commentService.createComment(createCommentRequest, email));
+        return ApiResponse.success(commentService.createComment(createCommentRequest, email));
     }
 
     @PutMapping("/{commentId}")
-    public ResponseEntity<UpdateCommentResponse> updateComment (@RequestBody UpdateCommentRequest updateCommentRequest, @PathVariable("commentId") String commentId, HttpServletRequest request) {
+    public ApiResponse<UpdateCommentResponse> updateComment (@RequestBody UpdateCommentRequest updateCommentRequest, @PathVariable("commentId") String commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(commentService.updateComment(updateCommentRequest, commentId, email));
+        return ApiResponse.success(commentService.updateComment(updateCommentRequest, commentId, email));
     }
 
     @DeleteMapping("/{commentId}")
-    public ResponseEntity<Void> deleteComment (@PathVariable("commentId") String commentId, HttpServletRequest request) {
+    public ApiResponse<Void> deleteComment (@PathVariable("commentId") String commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         commentService.deleteComment(commentId, email);
-        return ResponseEntity.ok().build();
+        return ApiResponse.success(null);
     }
 }

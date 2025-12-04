@@ -42,6 +42,9 @@ public class User extends Base {
     @Column(name = "following")
     private Integer followingCount = 0;
 
+    @Column(name = "friends")
+    private Integer friendsCount = 0;
+
     @Column(name = "email_verified")
     private boolean emailVerified;
 
@@ -54,6 +57,7 @@ public class User extends Base {
         this.lastName = lastName;
         this.displayName = displayName;
         this.avatarKey = "/user-avatars/default.png";
+        this.backgroundKey = "/user-backgrounds/default.png";
         this.emailVerified = false;
     }
 

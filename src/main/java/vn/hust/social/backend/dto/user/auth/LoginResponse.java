@@ -1,6 +1,6 @@
 package vn.hust.social.backend.dto.user.auth;
 
-import vn.hust.social.backend.dto.user.UserDTO;
+import vn.hust.social.backend.dto.UserDTO;
 
 public record LoginResponse(
         String type,

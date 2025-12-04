@@ -3,7 +3,8 @@ package vn.hust.social.backend.service.comment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.hust.social.backend.dto.comment.CommentDTO;
+import vn.hust.social.backend.common.response.ResponseCode;
+import vn.hust.social.backend.dto.CommentDTO;
 import vn.hust.social.backend.dto.comment.create.CreateCommentMediaRequest;
 import vn.hust.social.backend.dto.comment.create.CreateCommentRequest;
 import vn.hust.social.backend.dto.comment.create.CreateCommentResponse;
@@ -18,13 +19,14 @@ import vn.hust.social.backend.entity.enums.post.PostVisibility;
 import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
+import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.CommentMapper;
 import vn.hust.social.backend.repository.comment.CommentMediaRepository;
 import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
-import vn.hust.social.backend.repository.user.UserAuthRepository;
+import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.service.post.PostService;
-import vn.hust.social.backend.service.user.auth.FriendshipService;
+import vn.hust.social.backend.service.friendship.FriendshipService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,11 +45,11 @@ public class CommentService {
 
     @Transactional
     public GetCommentsResponse getComments(String postId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         UUID postID = UUID.fromString(postId);
-        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-        if (!canViewComments(userAuth.getUser(), post)) throw new RuntimeException("User not permitted to view comments");
+        if (!canViewComments(userAuth.getUser(), post)) throw new ApiException(ResponseCode.CANNOT_VIEW_COMMENTS);
 
         List<Comment> comments = post.getComments();
         List<CommentDTO> commentDTOs = new ArrayList<>();
@@ -62,11 +64,11 @@ public class CommentService {
 
     @Transactional
     public CreateCommentResponse createComment(CreateCommentRequest createCommentRequest, String email) {
-        Post post = postRepository.findByPostId(UUID.fromString(createCommentRequest.postId())).orElseThrow(() -> new RuntimeException("Post not found"));
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
+        Post post = postRepository.findByPostId(UUID.fromString(createCommentRequest.postId())).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User commenter =  userAuth.getUser();
 
-        if (!postService.canViewPost(commenter, post)) throw new RuntimeException("User not permitted to view posts");
+        if (!postService.canViewPost(commenter, post)) throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
 
         Comment comment = new Comment(commenter, post, createCommentRequest.content());
         for (CreateCommentMediaRequest createCommentMediaRequest : createCommentRequest.createCommentMediaRequest()) {
@@ -87,7 +89,7 @@ public class CommentService {
 
     @Transactional
     public UpdateCommentResponse updateComment(UpdateCommentRequest updateCommentRequest, String commentId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         String userId = userAuth.getUser().getId().toString();
         UUID commentID = UUID.fromString(commentId);
         Comment comment = commentRepository.findCommentById(commentID);
@@ -114,12 +116,12 @@ public class CommentService {
             CommentDTO commentDTO = commentMapper.toDTO(savedComment);
 
             return new UpdateCommentResponse(commentDTO);
-        } else throw new RuntimeException("User not authorized");
+        } else throw new ApiException(ResponseCode.CANNOT_UPDATE_COMMENT);
     }
 
     @Transactional
     public void deleteComment(String commentId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found."));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         String userId = userAuth.getUser().getId().toString();
         UUID commentID = UUID.fromString(commentId);
         Comment comment = commentRepository.getCommentById(commentID);
@@ -127,7 +129,7 @@ public class CommentService {
 
         if (userId.equals(userID)) {
             commentRepository.delete(comment);
-        } else throw new RuntimeException("User not authorized");
+        } else throw new ApiException(ResponseCode.CANNOT_DELETE_COMMENT);
     }
 
     private boolean canViewComments(User viewer, Post post) {

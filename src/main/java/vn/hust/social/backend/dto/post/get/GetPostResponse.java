@@ -1,9 +1,6 @@
 package vn.hust.social.backend.dto.post.get;
 
-import vn.hust.social.backend.dto.post.PostDTO;
-import vn.hust.social.backend.entity.post.Post;
-
-import java.util.List;
+import vn.hust.social.backend.dto.PostDTO;
 
 public record GetPostResponse(
         PostDTO post

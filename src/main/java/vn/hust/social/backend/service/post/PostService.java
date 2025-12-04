@@ -3,7 +3,8 @@ package vn.hust.social.backend.service.post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.hust.social.backend.dto.post.*;
+import vn.hust.social.backend.common.response.ResponseCode;
+import vn.hust.social.backend.dto.PostDTO;
 import vn.hust.social.backend.dto.post.create.CreatePostMediaRequest;
 import vn.hust.social.backend.dto.post.create.CreatePostRequest;
 import vn.hust.social.backend.dto.post.create.CreatePostResponse;
@@ -18,10 +19,11 @@ import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.post.PostMedia;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
+import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.PostMapper;
 import vn.hust.social.backend.repository.post.PostRepository;
-import vn.hust.social.backend.repository.user.UserAuthRepository;
-import vn.hust.social.backend.service.user.auth.FriendshipService;
+import vn.hust.social.backend.repository.auth.UserAuthRepository;
+import vn.hust.social.backend.service.friendship.FriendshipService;
 
 import java.util.UUID;
 
@@ -35,11 +37,11 @@ public class PostService {
 
     @Transactional
     public GetPostResponse getPost (String postId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         UUID postID = UUID.fromString(postId);
-        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-        if (!canViewPost(userAuth.getUser(), post)) throw new RuntimeException("User not permitted to view post");
+        if (!canViewPost(userAuth.getUser(), post)) throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
 
         PostDTO postDTO = postMapper.toDTO(post);
 
@@ -48,7 +50,7 @@ public class PostService {
 
     @Transactional
     public CreatePostResponse createPost(CreatePostRequest createPostRequest, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User user = userAuth.getUser();
         Post post = new Post(user, createPostRequest.content(), createPostRequest.visibility());
 
@@ -65,11 +67,11 @@ public class PostService {
 
     @Transactional
     public UpdatePostResponse updatePost(String postId, UpdatePostRequest updatePostRequest, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         String userId = userAuth.getUser().getId().toString();
 
         UUID postID = UUID.fromString(postId);
-        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
         String userID = post.getUser().getId().toString();
 
         if (userID.equals(userId)) {
@@ -92,16 +94,16 @@ public class PostService {
 
             PostDTO postDTO = postMapper.toDTO(post);
             return new UpdatePostResponse(postDTO);
-        } else throw new RuntimeException("User not authorized");
+        } else throw new ApiException(ResponseCode.CANNOT_UPDATE_POST);
     }
 
     @Transactional
     public void deletePost(String postId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         String userId = userAuth.getUser().getId().toString();
 
         UUID postID = UUID.fromString(postId);
-        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
         String userID = post.getUser().getId().toString();
 
         if (userID.equals(userId)) {
@@ -110,7 +112,7 @@ public class PostService {
             PostDTO postDTO = postMapper.toDTO(post);
 
             new DeletePostResponse(postDTO);
-        } else throw new RuntimeException("User not authorized");
+        } else throw new ApiException(ResponseCode.CANNOT_DELETE_POST);
     }
 
     public boolean canViewPost(User viewer, Post post) {

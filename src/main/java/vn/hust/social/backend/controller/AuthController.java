@@ -2,12 +2,14 @@ package vn.hust.social.backend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.hust.social.backend.common.response.ApiResponse;
+import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.user.auth.*;
-import vn.hust.social.backend.service.user.auth.AuthService;
-import vn.hust.social.backend.service.user.auth.EmailVerificationService;
-import vn.hust.social.backend.service.user.auth.M365Service;
+import vn.hust.social.backend.exception.ApiException;
+import vn.hust.social.backend.service.auth.AuthService;
+import vn.hust.social.backend.service.auth.EmailVerificationService;
+import vn.hust.social.backend.service.auth.M365Service;
 
 import java.util.Map;
 
@@ -21,7 +23,7 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register/local")
-    public ResponseEntity<LocalRegisterResponse> registerLocal(@RequestBody @Valid LocalRegisterRequest request) {
+    public ApiResponse<LocalRegisterResponse> registerLocal(@RequestBody @Valid LocalRegisterRequest request) {
         LocalRegisterResponse response = authService.registerLocal(
                 request.getFirstName(),
                 request.getLastName(),
@@ -30,17 +32,16 @@ public class AuthController {
                 request.getPassword()
         );
         emailVerificationService.sendVerificationEmail(request.getEmail(), request.getDisplayName());
-        return ResponseEntity.ok(response);
+        return ApiResponse.success(response);
     }
 
     @PostMapping("/login/local")
-    public ResponseEntity<LoginResponse> loginLocal(@RequestBody LocalLoginRequest request) {
-        LoginResponse response = authService.loginLocal(request.getEmail(), request.getPassword());
-        return ResponseEntity.ok(response);
+    public ApiResponse<LoginResponse> loginLocal(@RequestBody LocalLoginRequest request) {
+        return ApiResponse.success(authService.loginLocal(request.getEmail(), request.getPassword()));
     }
 
     @PostMapping("/login/oauth")
-    public ResponseEntity<LoginResponse> loginOAuth(@RequestBody OAuthLoginRequest request) {
+    public ApiResponse<LoginResponse> loginOAuth(@RequestBody OAuthLoginRequest request) {
         Map<String, Object> meResponse = m365Service.getUserInfo(request.getAccessToken());
         String email = (String) meResponse.get("mail");
 
@@ -56,16 +57,16 @@ public class AuthController {
             );
         }
 
-        return ResponseEntity.ok(response);
+        return ApiResponse.success(response);
     }
 
     @GetMapping("/verify-email")
-    public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
+    public ApiResponse<String> verifyEmail(@RequestParam("token") String token) {
         boolean verified = emailVerificationService.verifyEmailToken(token);
         if (verified) {
-            return ResponseEntity.ok("Email verified successfully!");
+            return ApiResponse.success("Email verified successfully");
         } else {
-            return ResponseEntity.badRequest().body("Invalid or expired verification token.");
+            throw new ApiException(ResponseCode.INVALID_OR_EXPIRED_EMAIL_VERIFICATION_TOKEN);
         }
     }
 }

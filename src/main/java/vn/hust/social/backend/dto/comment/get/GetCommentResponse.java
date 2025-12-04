@@ -1,6 +1,6 @@
 package vn.hust.social.backend.dto.comment.get;
 
-import vn.hust.social.backend.dto.user.UserDTO;
+import vn.hust.social.backend.dto.UserDTO;
 
 import java.util.List;
 import java.util.UUID;
