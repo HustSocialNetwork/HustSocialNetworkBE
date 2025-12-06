@@ -4,7 +4,7 @@ import vn.hust.social.backend.dto.PostDTO;
 
 import java.util.List;
 
-public record GetPostsResponse(
+public record GetPostsOfFollowingResponse(
         List<PostDTO> posts
 ) {
 }

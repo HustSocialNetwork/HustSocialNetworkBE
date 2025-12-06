@@ -1,6 +1,10 @@
 package vn.hust.social.backend.service.post;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.common.response.ResponseCode;
@@ -9,7 +13,9 @@ import vn.hust.social.backend.dto.post.create.CreatePostMediaRequest;
 import vn.hust.social.backend.dto.post.create.CreatePostRequest;
 import vn.hust.social.backend.dto.post.create.CreatePostResponse;
 import vn.hust.social.backend.dto.post.delete.DeletePostResponse;
-import vn.hust.social.backend.dto.post.get.GetPostResponse;
+import vn.hust.social.backend.dto.post.get.GetPostByPostIdResponse;
+import vn.hust.social.backend.dto.post.get.GetPostsByUserIdResponse;
+import vn.hust.social.backend.dto.post.get.GetPostsOfFollowingResponse;
 import vn.hust.social.backend.dto.post.update.UpdatePostMediaRequest;
 import vn.hust.social.backend.dto.post.update.UpdatePostRequest;
 import vn.hust.social.backend.dto.post.update.UpdatePostResponse;
@@ -25,6 +31,7 @@ import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.service.friendship.FriendshipService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor @Service
@@ -36,7 +43,7 @@ public class PostService {
     private final PostMapper postMapper;
 
     @Transactional
-    public GetPostResponse getPost (String postId, String email) {
+    public GetPostByPostIdResponse getPostByPostId (String postId, String email) {
         UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         UUID postID = UUID.fromString(postId);
         Post post = postRepository.findByPostId(postID).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
@@ -45,7 +52,52 @@ public class PostService {
 
         PostDTO postDTO = postMapper.toDTO(post);
 
-        return new GetPostResponse(postDTO);
+        return new GetPostByPostIdResponse(postDTO);
+    }
+
+    @Transactional
+    public GetPostsByUserIdResponse getPostsByUserId(String userId, int page, int pageSize, String email) {
+        UserAuth viewerUserAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.POST_VIEWER_NOT_FOUND));
+        UUID viewerId = viewerUserAuth.getUser().getId();
+        UUID ownerId =  UUID.fromString(userId);
+        Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
+        Page<Post> posts = postRepository.findPostsByUser(ownerId, viewerId, pageable);
+        List<PostDTO> postDTOS = posts.stream()
+                .map(postMapper::toDTO)
+                .toList();
+
+        return new GetPostsByUserIdResponse(postDTOS);
+    }
+
+    @Transactional
+    public GetPostsByUserIdResponse getAllPosts(int page, int pageSize, String email) {
+        UserAuth viewerUserAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.POST_VIEWER_NOT_FOUND));
+        UUID viewerId = viewerUserAuth.getUser().getId();
+
+        Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
+
+        // Lấy tất cả post mà viewer có quyền xem
+        Page<Post> posts = postRepository.findAllVisibleToViewer(viewerId, pageable);
+
+        List<PostDTO> postDTOS = posts.stream()
+                .map(postMapper::toDTO)
+                .toList();
+
+        return new GetPostsByUserIdResponse(postDTOS);
+    }
+
+    @Transactional
+    public GetPostsOfFollowingResponse getPostsOfFriends(int page, int pageSize, String email) {
+        UserAuth viewerUserAUth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UUID viewerId = viewerUserAUth.getUser().getId();
+        Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
+        Page<Post> posts = postRepository.findPostsOfFriends(viewerId, pageable);
+        List<PostDTO> postDTOS = posts.stream()
+                .map(postMapper::toDTO)
+                .toList();
+
+        return new GetPostsOfFollowingResponse(postDTOS);
     }
 
     @Transactional
@@ -121,7 +173,7 @@ public class PostService {
         if (post.getUser().getId().equals(viewer.getId())) return true;
 
         if (post.getVisibility() == PostVisibility.FRIENDS) {
-            return friendshipService.isFriend(viewer, post.getUser());
+            return friendshipService.isFriend(viewer.getId(), post.getUser().getId());
         }
 
         return false;

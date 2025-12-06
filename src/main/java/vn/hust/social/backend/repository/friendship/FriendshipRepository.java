@@ -10,8 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
-    Optional<Friendship> findFriendshipByRequesterAndReceiverOrReceiverAndRequester(User requester, User receiver, User receiver1, User requester1);
     Optional<Friendship> findFriendshipById(UUID id);
     List<Friendship> findFriendshipsByReceiverAndStatus(User receiver, FriendshipStatus status);
     List<Friendship> findFriendshipsByRequesterAndStatus(User requester, FriendshipStatus status);
+    Optional<Friendship> findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(UUID receiverId, UUID receiverId1, UUID requesterId, UUID receiverId11);
 }

@@ -138,7 +138,7 @@ public class CommentService {
         if (post.getUser().getId().equals(viewer.getId())) return true;
 
         if (post.getVisibility() == PostVisibility.FRIENDS) {
-            return friendshipService.isFriend(viewer, post.getUser());
+            return friendshipService.isFriend(viewer.getId(), post.getUser().getId());
         }
 
         return false;

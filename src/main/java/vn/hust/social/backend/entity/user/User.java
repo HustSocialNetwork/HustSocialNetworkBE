@@ -60,12 +60,4 @@ public class User extends Base {
         this.backgroundKey = "/user-backgrounds/default.png";
         this.emailVerified = false;
     }
-
-    @Override
-    public String toString() {
-        return String.format(
-                "User[id=%s, firstName='%s', lastName='%s', displayName='%s']",
-                id, firstName, lastName, displayName
-        );
-    }
 }

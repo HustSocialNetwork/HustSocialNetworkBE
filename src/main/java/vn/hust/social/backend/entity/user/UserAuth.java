@@ -53,13 +53,5 @@ public class UserAuth extends Base {
         this.email = email;
         this.password = password;
     }
-
-    @Override
-    public String toString() {
-        return String.format(
-                "UserAuth[id=%s, userId=%s, provider=%s, email=%s]",
-                id, user.getId(), provider, email
-        );
-    }
 }
 

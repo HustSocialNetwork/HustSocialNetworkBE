@@ -44,6 +44,11 @@ public enum ResponseCode {
 
     // ===== MEDIA =====
 
+    // ===== BLOCK =====
+    USER_ALREADY_BLOCKED(5001, "User is already blocked", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_BEEN_BLOCKED(5002, "You have already been blocked by this user", HttpStatus.FORBIDDEN),
+    BLOCK_NOT_FOUND(5003, "Block relationship not found", HttpStatus.NOT_FOUND),
+
     // ===== VALIDATION =====
     VALIDATION_ERROR(14001, "Validation error", HttpStatus.BAD_REQUEST),
 

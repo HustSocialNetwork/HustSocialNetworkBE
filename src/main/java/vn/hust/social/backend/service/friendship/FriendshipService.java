@@ -32,11 +32,14 @@ public class FriendshipService {
     private final FriendshipMapper friendshipMapper;
 
     @Transactional
-    public FriendRequestResponse friendRequest (UUID receiverId, String requesterEmail) {
+    public FriendRequestResponse friendRequest (
+            UUID receiverId,
+            String requesterEmail) {
         UserAuth userAuth = userAuthRepository.findByEmail(requesterEmail).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
-        User receiver = userRepository.findById(receiverId).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User requester = userAuth.getUser();
-        Friendship checkFriendship = friendshipRepository.findFriendshipByRequesterAndReceiverOrReceiverAndRequester(requester, receiver, receiver, requester).orElse(null);
+        UUID requesterId = requester.getId();
+        User receiver = userRepository.findById(receiverId).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        Friendship checkFriendship = friendshipRepository.findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(requesterId, receiverId, receiverId, requesterId).orElse(null);
         if (checkFriendship == null) {
             Friendship friendship = new Friendship(requester, receiver, FriendshipStatus.PENDING);
             friendshipRepository.save(friendship);
@@ -70,10 +73,10 @@ public class FriendshipService {
 
     @Transactional
     public FriendUnfriendResponse friendUnfriend (UUID friendId, String email) {
-        User friend = userRepository.findById(friendId).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User user = userAuth.getUser();
-        Friendship friendship = friendshipRepository.findFriendshipByRequesterAndReceiverOrReceiverAndRequester(user, friend, friend, user).orElseThrow(()  -> new ApiException(ResponseCode.FRIENDSHIP_NOT_FOUND));
+        UUID userId = user.getId();
+        Friendship friendship = friendshipRepository.findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(userId, friendId, userId, friendId).orElseThrow(()  -> new ApiException(ResponseCode.FRIENDSHIP_NOT_FOUND));
         FriendshipDTO friendshipDTO = friendshipMapper.toDTO(friendship);
 
         if (friendship.getStatus().equals(FriendshipStatus.ACCEPTED)) {
@@ -105,8 +108,8 @@ public class FriendshipService {
     }
 
     @Transactional
-    public boolean isFriend(User user1, User user2) {
-        Friendship friendship = friendshipRepository.findFriendshipByRequesterAndReceiverOrReceiverAndRequester(user1, user2, user2, user1).orElseThrow(() -> new ApiException(ResponseCode.FRIENDSHIP_NOT_FOUND));
+    public boolean isFriend(UUID user1Id, UUID user2Id) {
+        Friendship friendship = friendshipRepository.findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(user1Id, user2Id, user2Id, user1Id).orElseThrow(() -> new ApiException(ResponseCode.FRIENDSHIP_NOT_FOUND));
 
         return friendship.getStatus() == FriendshipStatus.ACCEPTED;
     }

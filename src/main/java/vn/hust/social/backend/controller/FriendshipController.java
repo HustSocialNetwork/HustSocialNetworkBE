@@ -2,10 +2,7 @@ package vn.hust.social.backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.friendship.accept.FriendAcceptRequest;
 import vn.hust.social.backend.dto.friendship.accept.FriendAcceptResponse;
@@ -28,7 +25,9 @@ public class FriendshipController {
     private final JwtUtils jwtUtils;
 
     @PostMapping("/request")
-    public ApiResponse<FriendRequestResponse> friendRequest (@RequestBody FriendRequestRequest friendRequestRequest, HttpServletRequest request) {
+    public ApiResponse<FriendRequestResponse> friendRequest (
+            @RequestBody FriendRequestRequest friendRequestRequest,
+            HttpServletRequest request) {
         String requesterEmail = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(friendshipService.friendRequest(friendRequestRequest.receiverId(), requesterEmail));
     }
@@ -52,13 +51,13 @@ public class FriendshipController {
         return ApiResponse.success(friendshipService.friendUnfriend(friendUnfriendRequest.friendId(), email));
     }
 
-    @PostMapping("/requests/incoming")
+    @GetMapping("/requests/incoming")
     public ApiResponse<FriendIncomingResponse> friendIncoming (HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(friendshipService.friendIncoming(email));
     }
 
-    @PostMapping("/requests/outgoing")
+    @GetMapping("/requests/outgoing")
     public ApiResponse<FriendOutgoingResponse> friendOutgoing (HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(friendshipService.friendOutgoing(email));
