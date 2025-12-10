@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.user.auth;
+package vn.hust.social.backend.dto.auth;
 
 public record ForgotPasswordResponse(
         Boolean success,

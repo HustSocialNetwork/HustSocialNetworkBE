@@ -11,6 +11,7 @@ public record ProfileDTO(
         String backgroundKey,
         String bio,
         Integer followerCount,
-        Integer followingCount
+        Integer followingCount,
+        Integer friendsCount
 ) {
 }

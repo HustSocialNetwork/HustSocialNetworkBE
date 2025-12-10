@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.common.response.ResponseCode;
-import vn.hust.social.backend.dto.user.auth.*;
+import vn.hust.social.backend.dto.auth.*;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.service.auth.AuthService;
 import vn.hust.social.backend.service.auth.EmailVerificationService;

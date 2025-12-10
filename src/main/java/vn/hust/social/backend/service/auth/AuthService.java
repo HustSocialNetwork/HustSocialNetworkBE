@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.hust.social.backend.common.response.ResponseCode;
-import vn.hust.social.backend.dto.user.auth.LocalRegisterResponse;
-import vn.hust.social.backend.dto.user.auth.LoginResponse;
+import vn.hust.social.backend.dto.auth.LocalRegisterResponse;
+import vn.hust.social.backend.dto.auth.LoginResponse;
 import vn.hust.social.backend.dto.UserDTO;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;

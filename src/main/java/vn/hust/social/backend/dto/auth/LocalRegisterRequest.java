@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.user.auth;
+package vn.hust.social.backend.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.user.profile;
+package vn.hust.social.backend.dto.profile;
 
 import vn.hust.social.backend.dto.ProfileDTO;
 

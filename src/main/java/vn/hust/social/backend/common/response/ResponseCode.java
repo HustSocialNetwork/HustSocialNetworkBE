@@ -55,6 +55,9 @@ public enum ResponseCode {
     ALREADY_LIKED(6001, "You have already liked this", HttpStatus.BAD_REQUEST),
     ALREADY_UNLIKED(6002, "You have already unliked this", HttpStatus.BAD_REQUEST),
 
+    // ===== PROFILE =====
+    SEARCH_PROFILE_KEYWORD_REQUIRED(6004, "Search profile keyword required", HttpStatus.BAD_REQUEST),
+
     // ===== VALIDATION =====
     VALIDATION_ERROR(14001, "Validation error", HttpStatus.BAD_REQUEST),
 
