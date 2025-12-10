@@ -31,9 +31,9 @@ public class PostController {
     }
 
     @Validated
-    @GetMapping("/{userId}")
+    @GetMapping()
     public ApiResponse<GetPostsByUserIdResponse> getPostsByUserId(
-            @PathVariable String userId,
+            @RequestParam String userId,
             @RequestParam int page,
             @RequestParam @Max(50) int pageSize,
             HttpServletRequest request) {

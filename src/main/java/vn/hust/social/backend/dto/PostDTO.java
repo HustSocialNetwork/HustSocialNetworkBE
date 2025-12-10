@@ -14,7 +14,6 @@ public record PostDTO(
         PostVisibility visibility,
         int likesCount,
         int commentsCount,
-        List<PostMediaDTO> medias,
-        List<CommentDTO> comments
+        List<PostMediaDTO> medias
 ) {
 }

@@ -15,18 +15,17 @@ import vn.hust.social.backend.dto.comment.update.UpdateCommentResponse;
 import vn.hust.social.backend.entity.comment.Comment;
 import vn.hust.social.backend.entity.comment.CommentMedia;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
-import vn.hust.social.backend.entity.enums.post.PostVisibility;
 import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.CommentMapper;
+import vn.hust.social.backend.repository.block.BlockRepository;
 import vn.hust.social.backend.repository.comment.CommentMediaRepository;
 import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.service.post.PostService;
-import vn.hust.social.backend.service.friendship.FriendshipService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +36,10 @@ import java.util.UUID;
 public class CommentService {
     private final PostRepository postRepository;
     private final UserAuthRepository userAuthRepository;
-    private final FriendshipService friendshipService;
     private final CommentRepository commentRepository;
     private final CommentMediaRepository commentMediaRepository;
     private final PostService postService;
+    private final BlockRepository blockRepository;
     private final CommentMapper commentMapper;
 
     @Transactional
@@ -49,14 +48,16 @@ public class CommentService {
         UUID postID = UUID.fromString(postId);
         Post post = postRepository.findByPostId(postID).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-        if (!canViewComments(userAuth.getUser(), post)) throw new ApiException(ResponseCode.CANNOT_VIEW_COMMENTS);
+        if (!postService.canViewPost(userAuth.getUser(), post)) throw new ApiException(ResponseCode.CANNOT_VIEW_COMMENTS);
 
         List<Comment> comments = post.getComments();
         List<CommentDTO> commentDTOs = new ArrayList<>();
 
         for (Comment comment : comments) {
-            CommentDTO commentDTO = commentMapper.toDTO(comment);
-            commentDTOs.add(commentDTO);
+            if (canViewComment(userAuth.getUser().getId(), comment)) {
+                CommentDTO commentDTO = commentMapper.toDTO(comment);
+                commentDTOs.add(commentDTO);
+            }
         }
 
         return new GetCommentsResponse(commentDTOs);
@@ -71,6 +72,8 @@ public class CommentService {
         if (!postService.canViewPost(commenter, post)) throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
 
         Comment comment = new Comment(commenter, post, createCommentRequest.content());
+        post.setCommentsCount(post.getCommentsCount() + 1);
+
         for (CreateCommentMediaRequest createCommentMediaRequest : createCommentRequest.createCommentMediaRequest()) {
             comment.getMediaList().add(new CommentMedia(
                     comment,
@@ -80,11 +83,9 @@ public class CommentService {
             ));
         }
         comment.setPost(post);
-        post.getComments().add(comment);
-        Comment savedComment = commentRepository.saveAndFlush(comment);
-        CommentDTO commentDTO = commentMapper.toDTO(savedComment);
+        commentRepository.save(comment);
 
-        return new CreateCommentResponse(commentDTO);
+        return new CreateCommentResponse(commentMapper.toDTO(comment));
     }
 
     @Transactional
@@ -132,15 +133,11 @@ public class CommentService {
         } else throw new ApiException(ResponseCode.CANNOT_DELETE_COMMENT);
     }
 
-    private boolean canViewComments(User viewer, Post post) {
-        if (post.getVisibility() == PostVisibility.PUBLIC) return true;
-
-        if (post.getUser().getId().equals(viewer.getId())) return true;
-
-        if (post.getVisibility() == PostVisibility.FRIENDS) {
-            return friendshipService.isFriend(viewer.getId(), post.getUser().getId());
+    public boolean canViewComment(UUID viewerId, Comment comment) {
+        if (blockRepository.existsByBlockerIdAndBlockedId(viewerId, comment.getUser().getId())) {
+            return false;
         }
 
-        return false;
+        return !blockRepository.existsByBlockerIdAndBlockedId(comment.getUser().getId(), viewerId);
     }
 }

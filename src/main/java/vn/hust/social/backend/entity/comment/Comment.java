@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Data
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "comment")

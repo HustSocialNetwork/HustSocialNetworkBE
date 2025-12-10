@@ -27,6 +27,7 @@ import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.PostMapper;
+import vn.hust.social.backend.repository.block.BlockRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.service.friendship.FriendshipService;
@@ -39,6 +40,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserAuthRepository userAuthRepository;
+    private final BlockRepository blockRepository;
     private final FriendshipService friendshipService;
     private final PostMapper postMapper;
 
@@ -77,7 +79,6 @@ public class PostService {
 
         Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
 
-        // Lấy tất cả post mà viewer có quyền xem
         Page<Post> posts = postRepository.findAllVisibleToViewer(viewerId, pageable);
 
         List<PostDTO> postDTOS = posts.stream()
@@ -159,7 +160,6 @@ public class PostService {
         String userID = post.getUser().getId().toString();
 
         if (userID.equals(userId)) {
-            // dùng cách này vì xóa được cả PostMedia
             postRepository.delete(post);
             PostDTO postDTO = postMapper.toDTO(post);
 
@@ -168,6 +168,14 @@ public class PostService {
     }
 
     public boolean canViewPost(User viewer, Post post) {
+        if (blockRepository.existsByBlockerIdAndBlockedId(viewer.getId(), post.getUser().getId())) {
+            return false;
+        }
+
+        if (blockRepository.existsByBlockerIdAndBlockedId(post.getUser().getId(), viewer.getId())) {
+            return false;
+        }
+
         if (post.getVisibility() == PostVisibility.PUBLIC) return true;
 
         if (post.getUser().getId().equals(viewer.getId())) return true;

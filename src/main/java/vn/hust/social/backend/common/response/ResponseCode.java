@@ -32,8 +32,10 @@ public enum ResponseCode {
 
     // ===== COMMENT =====
     CANNOT_VIEW_COMMENTS(4001, "User is not allowed to view comments of this post", HttpStatus.FORBIDDEN),
-    CANNOT_UPDATE_COMMENT(3002, "User is not allowed to update comment", HttpStatus.BAD_REQUEST),
-    CANNOT_DELETE_COMMENT(3003, "User is not allowed to delete comment", HttpStatus.BAD_REQUEST),
+    CANNOT_UPDATE_COMMENT(4002, "User is not allowed to update comment", HttpStatus.BAD_REQUEST),
+    CANNOT_DELETE_COMMENT(4003, "User is not allowed to delete comment", HttpStatus.BAD_REQUEST),
+    COMMENT_NOT_FOUND(4004, "Comment not found", HttpStatus.NOT_FOUND),
+    CANNOT_VIEW_COMMENT(4005, "User is not allowed to view this comment", HttpStatus.BAD_REQUEST),
 
     // ===== FRIENDSHIP =====
     FRIENDSHIP_NOT_FOUND(3004, "Friendship not found", HttpStatus.NOT_FOUND),
@@ -48,6 +50,10 @@ public enum ResponseCode {
     USER_ALREADY_BLOCKED(5001, "User is already blocked", HttpStatus.BAD_REQUEST),
     USER_ALREADY_BEEN_BLOCKED(5002, "You have already been blocked by this user", HttpStatus.FORBIDDEN),
     BLOCK_NOT_FOUND(5003, "Block relationship not found", HttpStatus.NOT_FOUND),
+
+    // ===== LIKE =====
+    ALREADY_LIKED(6001, "You have already liked this", HttpStatus.BAD_REQUEST),
+    ALREADY_UNLIKED(6002, "You have already unliked this", HttpStatus.BAD_REQUEST),
 
     // ===== VALIDATION =====
     VALIDATION_ERROR(14001, "Validation error", HttpStatus.BAD_REQUEST),

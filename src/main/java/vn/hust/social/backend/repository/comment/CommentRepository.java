@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import vn.hust.social.backend.entity.comment.Comment;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
@@ -12,4 +13,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     Comment getCommentById(UUID id);
     
     Comment findCommentById(UUID id);
+
+    @Override
+    Optional<Comment> findById(UUID uuid);
 }
