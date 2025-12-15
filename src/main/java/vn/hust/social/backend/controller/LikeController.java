@@ -44,5 +44,4 @@ public class LikeController {
         likeService.unlikeComment(commentId, email);
         return ApiResponse.success("Successfully unliked comment");
     }
-
 }

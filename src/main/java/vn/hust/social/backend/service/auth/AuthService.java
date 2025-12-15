@@ -79,6 +79,7 @@ public class AuthService {
         UserDTO userDto = userMapper.toDTO(user);
 
         if (!user.isEmailVerified()) {
+            emailVerificationService.sendVerificationEmail(email, user.getDisplayName());
             throw new ApiException(ResponseCode.EMAIL_NOT_VERIFIED);
         }
 
