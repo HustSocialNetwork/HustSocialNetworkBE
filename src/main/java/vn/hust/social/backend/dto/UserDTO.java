@@ -1,6 +1,6 @@
 package vn.hust.social.backend.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record UserDTO(
@@ -8,7 +8,7 @@ public record UserDTO(
         String firstName,
         String lastName,
         String displayName,
-        LocalDateTime createdAt,
+        Instant createdAt,
         String avatarKey,
         String backgroundKey,
         String bio,

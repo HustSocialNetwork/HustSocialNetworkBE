@@ -53,7 +53,10 @@ public class AuthController {
             response = authService.registerOAuth(
                     (String) meResponse.get("givenName"),
                     (String) meResponse.get("surname"),
-                    (String) meResponse.get("displayName"),
+        ((String) meResponse.get("displayName")).replaceAll("\\s+", "") + "_" +
+                new java.util.Random().ints(16, 0, 52)
+                        .mapToObj("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"::charAt)
+                        .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append),
                     email
             );
         }

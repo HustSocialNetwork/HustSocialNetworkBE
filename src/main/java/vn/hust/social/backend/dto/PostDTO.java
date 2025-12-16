@@ -3,7 +3,7 @@ package vn.hust.social.backend.dto;
 import vn.hust.social.backend.entity.enums.post.PostStatus;
 import vn.hust.social.backend.entity.enums.post.PostVisibility;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,6 +16,6 @@ public record PostDTO(
         int likesCount,
         int commentsCount,
         List<PostMediaDTO> medias,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

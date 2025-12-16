@@ -33,7 +33,6 @@ public class MediaService {
             List<UploadMediaResponse> getPresignedObjectUrlsForUploadingResponse = new ArrayList<>();
             for (UploadMediaRequest uploadMediaRequest : uploadMediaRequests) {
                 Map<String, String> reqParams = new HashMap<>();
-                reqParams.put("response-content-type", "application/json");
                 String date = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
                 String fileExtension = FileNameUtils.getExtension(uploadMediaRequest.name());
                 String objectKey = date + "/" + uploadMediaRequest.type() + "/" + UUID.randomUUID() + "." + fileExtension;
@@ -66,7 +65,6 @@ public class MediaService {
             for (DownloadMediaRequest downloadMediaRequest : downloadMediaRequests) {
                 String objectKey = downloadMediaRequest.objectKey();
                 Map<String, String> reqParams = new HashMap<>();
-                reqParams.put("response-content-type", "application/json");
 
                 String presignedUrlForDownloading =  minioClient.getPresignedObjectUrl(
                         GetPresignedObjectUrlArgs.builder()
