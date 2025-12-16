@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.auth.*;
+import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.service.auth.AuthService;
 import vn.hust.social.backend.service.auth.EmailVerificationService;
@@ -46,7 +47,7 @@ public class AuthController {
         String email = (String) meResponse.get("mail");
 
         LoginResponse response;
-        if (authService.existsEmail(email)) {
+        if (authService.existsByProviderAndEmail(UserAuth.AuthProvider.M365, email)) {
             response = authService.loginOAuth(email);
         } else {
             response = authService.registerOAuth(

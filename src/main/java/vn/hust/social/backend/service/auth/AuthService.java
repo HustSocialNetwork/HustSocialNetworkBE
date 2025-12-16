@@ -101,7 +101,7 @@ public class AuthService {
         return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()), jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
     }
 
-    public boolean existsEmail(String email) {
-        return userAuthRepository.existsByEmail(email);
+    public boolean existsByProviderAndEmail(UserAuth.AuthProvider authProvider, String email) {
+        return userAuthRepository.existsByProviderAndEmail(authProvider, email);
     }
 }

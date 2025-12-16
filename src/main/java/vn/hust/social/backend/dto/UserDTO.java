@@ -8,5 +8,10 @@ public record UserDTO(
         String firstName,
         String lastName,
         String displayName,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String avatarKey,
+        String backgroundKey,
+        String bio,
+        Integer friendsCount,
+        boolean emailVerified
 ) {}
