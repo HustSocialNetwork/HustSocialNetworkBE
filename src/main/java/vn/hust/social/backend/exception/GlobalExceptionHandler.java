@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception e) {
-        log.error("Unexpected error: {}", e.getMessage()); // optional
+        log.error("Unexpected error", e); // optional
         return ResponseEntity
                 .status(ResponseCode.UNKNOWN_ERROR.getHttpStatus())
                 .body(ApiResponse.error(ResponseCode.UNKNOWN_ERROR));
