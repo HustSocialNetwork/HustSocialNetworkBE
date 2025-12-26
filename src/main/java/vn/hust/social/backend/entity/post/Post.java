@@ -7,10 +7,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import vn.hust.social.backend.entity.Base;
-import vn.hust.social.backend.entity.comment.Comment;
 import vn.hust.social.backend.entity.enums.post.PostStatus;
 import vn.hust.social.backend.entity.enums.post.PostVisibility;
 import vn.hust.social.backend.entity.user.User;
+import vn.hust.social.backend.entity.comment.Comment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +20,8 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "post")
-@Getter @Setter
+@Getter
+@Setter
 public class Post extends Base {
     @Id
     @GeneratedValue
@@ -50,12 +51,9 @@ public class Post extends Base {
     private Integer commentsCount = 0;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PostMedia> mediaList =  new ArrayList<>();
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
-    protected Post () {
+    protected Post() {
         // Default constructor
     }
 

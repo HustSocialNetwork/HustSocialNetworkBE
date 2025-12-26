@@ -2,7 +2,6 @@ package vn.hust.social.backend.entity.comment;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,44 +9,57 @@ import vn.hust.social.backend.entity.Base;
 import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.user.User;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
-@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "comment")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = false)
 public class Comment extends Base {
+
     @Id
     @GeneratedValue
-    @Column(columnDefinition = "BINARY(16)", updatable = false, nullable = false)
+    @Column(columnDefinition = "BINARY(16)", nullable = false, updatable = false)
     private UUID id;
 
+    /* ===== AUTHOR ===== */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="user_id",  nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    /* ===== POST ===== */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="post_id",  nullable = false)
+    @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
+    /* ===== THREAD ===== */
+    // null = root comment
+    // not null = reply to another comment
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Comment parent;
+
+    /* ===== CONTENT ===== */
     @Size(min = 1, max = 5000)
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "likes_count")
+    /* ===== META ===== */
+    @Column(name = "likes_count", nullable = false)
     private Integer likesCount = 0;
 
-    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CommentMedia> mediaList =  new ArrayList<>();
+    // Number of direct replies to this comment
+    @Column(name = "replies_count", nullable = false)
+    private Integer repliesCount = 0;
 
-    protected Comment() {}
+    protected Comment() {
+    }
 
-    public Comment(User user, Post post, String content) {
+    public Comment(User user, Post post, Comment parent, String content) {
         this.user = user;
         this.post = post;
+        this.parent = parent;
         this.content = content;
     }
 }

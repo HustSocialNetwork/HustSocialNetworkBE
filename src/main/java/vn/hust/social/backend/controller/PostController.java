@@ -13,6 +13,7 @@ import vn.hust.social.backend.dto.post.get.GetPostsByUserIdResponse;
 import vn.hust.social.backend.dto.post.get.GetPostsOfFollowingResponse;
 import vn.hust.social.backend.dto.post.update.UpdatePostRequest;
 import vn.hust.social.backend.dto.post.update.UpdatePostResponse;
+import vn.hust.social.backend.dto.post.delete.DeletePostResponse;
 import vn.hust.social.backend.security.JwtHeaderUtils;
 import vn.hust.social.backend.security.JwtUtils;
 import vn.hust.social.backend.service.post.PostService;
@@ -25,7 +26,8 @@ public class PostController {
     private final PostService postService;
 
     @GetMapping("/{postId}")
-    public ApiResponse<GetPostByPostIdResponse> getPostByPostId(@PathVariable String postId, HttpServletRequest request) {
+    public ApiResponse<GetPostByPostIdResponse> getPostByPostId(@PathVariable String postId,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(postService.getPostByPostId(postId, email));
     }
@@ -79,11 +81,11 @@ public class PostController {
     }
 
     @DeleteMapping("/{postId}")
-    public ApiResponse<Void> deletePost(
+    public ApiResponse<DeletePostResponse> deletePost(
             @PathVariable String postId,
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        postService.deletePost(postId, email);
-        return ApiResponse.success(null);
+        DeletePostResponse response = postService.deletePost(postId, email);
+        return ApiResponse.success(response);
     }
 }

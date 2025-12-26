@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
+import vn.hust.social.backend.entity.enums.like.TargetType;
 import vn.hust.social.backend.security.JwtHeaderUtils;
 import vn.hust.social.backend.security.JwtUtils;
 import vn.hust.social.backend.service.like.LikeService;
@@ -20,28 +21,28 @@ public class LikeController {
     @PostMapping("/post/{postId}")
     public ApiResponse<String> likePost (@PathVariable UUID postId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        likeService.likePost(postId, email);
+        likeService.like(postId, TargetType.POST, email);
         return ApiResponse.success("Successfully liked post");
     }
 
     @DeleteMapping("/post/{postId}")
     public ApiResponse<String> unlikePost (@PathVariable UUID postId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        likeService.unlikePost(postId, email);
+        likeService.unlike(postId, TargetType.POST, email);
         return ApiResponse.success("Successfully unliked post");
     }
 
     @PostMapping("/comment/{commentId}")
     public ApiResponse<String> likeComment (@PathVariable UUID commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        likeService.likeComment(commentId, email);
+        likeService.like(commentId, TargetType.COMMENT, email);
         return ApiResponse.success("Successfully liked comment");
     }
 
     @DeleteMapping("/comment/{commentId}")
     public ApiResponse<String> unlikeComment(@PathVariable UUID commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        likeService.unlikeComment(commentId, email);
+        likeService.unlike(commentId, TargetType.COMMENT, email);
         return ApiResponse.success("Successfully unliked comment");
     }
 }

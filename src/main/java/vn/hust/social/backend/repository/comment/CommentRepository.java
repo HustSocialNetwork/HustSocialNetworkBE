@@ -10,8 +10,11 @@ import java.util.UUID;
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
     List<Comment> getCommentsByPostPostId(UUID postPostId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM Comment c WHERE c.post.postId = :postId")
+    List<Comment> findByPostId(@org.springframework.data.repository.query.Param("postId") UUID postId);
+
     Comment getCommentById(UUID id);
-    
+
     Comment findCommentById(UUID id);
 
     @Override

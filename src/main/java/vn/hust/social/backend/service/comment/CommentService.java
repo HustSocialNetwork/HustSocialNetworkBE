@@ -5,23 +5,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.CommentDTO;
-import vn.hust.social.backend.dto.comment.create.CreateCommentMediaRequest;
+import vn.hust.social.backend.dto.MediaDTO;
+import vn.hust.social.backend.dto.media.CreateMediaRequest;
+import vn.hust.social.backend.dto.media.UpdateMediaRequest;
 import vn.hust.social.backend.dto.comment.create.CreateCommentRequest;
 import vn.hust.social.backend.dto.comment.create.CreateCommentResponse;
 import vn.hust.social.backend.dto.comment.get.GetCommentsResponse;
-import vn.hust.social.backend.dto.comment.update.UpdateCommentMediaRequest;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentRequest;
 import vn.hust.social.backend.dto.comment.update.UpdateCommentResponse;
 import vn.hust.social.backend.entity.comment.Comment;
-import vn.hust.social.backend.entity.comment.CommentMedia;
+import vn.hust.social.backend.entity.media.Media;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
+import vn.hust.social.backend.entity.enums.media.MediaTargetType;
 import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.CommentMapper;
+import vn.hust.social.backend.mapper.MediaMapper;
 import vn.hust.social.backend.repository.block.BlockRepository;
-import vn.hust.social.backend.repository.comment.CommentMediaRepository;
+import vn.hust.social.backend.repository.media.MediaRepository;
 import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
@@ -37,25 +40,34 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserAuthRepository userAuthRepository;
     private final CommentRepository commentRepository;
-    private final CommentMediaRepository commentMediaRepository;
+    private final MediaRepository mediaRepository;
     private final PostService postService;
     private final BlockRepository blockRepository;
     private final CommentMapper commentMapper;
+    private final MediaMapper mediaMapper;
 
     @Transactional
     public GetCommentsResponse getComments(String postId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth userAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         UUID postID = UUID.fromString(postId);
-        Post post = postRepository.findByPostId(postID).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
+        Post post = postRepository.findByPostId(postID)
+                .orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-        if (!postService.canViewPost(userAuth.getUser(), post)) throw new ApiException(ResponseCode.CANNOT_VIEW_COMMENTS);
+        if (!postService.canViewPost(userAuth.getUser(), post))
+            throw new ApiException(ResponseCode.CANNOT_VIEW_COMMENTS);
 
-        List<Comment> comments = post.getComments();
+        List<Comment> comments = commentRepository.findByPostId(post.getPostId());
         List<CommentDTO> commentDTOs = new ArrayList<>();
 
         for (Comment comment : comments) {
             if (canViewComment(userAuth.getUser().getId(), comment)) {
-                CommentDTO commentDTO = commentMapper.toDTO(comment);
+                List<MediaDTO> medias = mediaRepository
+                        .findByTargetIdAndTargetType(comment.getId(), MediaTargetType.COMMENT)
+                        .stream()
+                        .map(mediaMapper::toDTO)
+                        .toList();
+                CommentDTO commentDTO = commentMapper.toDTO(comment, medias);
                 commentDTOs.add(commentDTO);
             }
         }
@@ -64,65 +76,111 @@ public class CommentService {
     }
 
     @Transactional
-    public CreateCommentResponse createComment(CreateCommentRequest createCommentRequest, String email) {
-        Post post = postRepository.findByPostId(UUID.fromString(createCommentRequest.postId())).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
-        User commenter =  userAuth.getUser();
+    public CreateCommentResponse createComment(
+            CreateCommentRequest request,
+            String email) {
+        UserAuth userAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        User commenter = userAuth.getUser();
 
-        if (!postService.canViewPost(commenter, post)) throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
+        Post post = postRepository.findByPostId(UUID.fromString(request.postId()))
+                .orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-        Comment comment = new Comment(commenter, post, createCommentRequest.content());
-        post.setCommentsCount(post.getCommentsCount() + 1);
-
-        for (CreateCommentMediaRequest createCommentMediaRequest : createCommentRequest.createCommentMediaRequest()) {
-            comment.getMediaList().add(new CommentMedia(
-                    comment,
-                    createCommentMediaRequest.type(),
-                    createCommentMediaRequest.objectKey(),
-                    createCommentMediaRequest.orderIndex()
-            ));
+        if (!postService.canViewPost(commenter, post)) {
+            throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
         }
-        comment.setPost(post);
+
+        Comment parent = null;
+        if (request.parentCommentId() != null) {
+            parent = commentRepository.findById(UUID.fromString(request.parentCommentId()))
+                    .orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
+
+            if (!parent.getPost().getPostId().equals(post.getPostId())) {
+                throw new ApiException(ResponseCode.INVALID_PARENT_COMMENT);
+            }
+        }
+
+        Comment comment = new Comment(
+                commenter,
+                post,
+                parent,
+                request.content());
         commentRepository.save(comment);
 
-        return new CreateCommentResponse(commentMapper.toDTO(comment));
+        List<CreateMediaRequest> mediaRequests = request.createCommentMediaRequest() != null
+                ? request.createCommentMediaRequest()
+                : List.of();
+
+        for (CreateMediaRequest mediaRequest : mediaRequests) {
+            Media media = new Media(
+                    comment.getId(),
+                    MediaTargetType.COMMENT,
+                    mediaRequest.type(),
+                    mediaRequest.objectKey(),
+                    mediaRequest.orderIndex());
+            mediaRepository.save(media);
+        }
+
+        post.setCommentsCount(post.getCommentsCount() + 1);
+
+        if (parent != null) {
+            parent.setRepliesCount(parent.getRepliesCount() + 1);
+        }
+
+        List<MediaDTO> medias = mediaRepository.findByTargetIdAndTargetType(comment.getId(), MediaTargetType.COMMENT)
+                .stream()
+                .map(mediaMapper::toDTO)
+                .toList();
+
+        return new CreateCommentResponse(commentMapper.toDTO(comment, medias));
     }
 
     @Transactional
-    public UpdateCommentResponse updateComment(UpdateCommentRequest updateCommentRequest, String commentId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+    public UpdateCommentResponse updateComment(UpdateCommentRequest updateCommentRequest, String commentId,
+            String email) {
+        UserAuth userAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         String userId = userAuth.getUser().getId().toString();
         UUID commentID = UUID.fromString(commentId);
         Comment comment = commentRepository.findCommentById(commentID);
         String userID = comment.getUser().getId().toString();
 
         if (userId.equals(userID)) {
-            // change content
             comment.setContent(updateCommentRequest.content());
 
-            // change media list
-            for (UpdateCommentMediaRequest updateCommentMediaRequest : updateCommentRequest.updateCommentMediaRequests()) {
+            for (UpdateMediaRequest updateCommentMediaRequest : updateCommentRequest.updateCommentMediaRequests()) {
 
                 if (updateCommentMediaRequest.operation() == MediaOperation.DELETE) {
-                    CommentMedia commentMedia = commentMediaRepository.getCommentMediaByObjectKey(updateCommentMediaRequest.objectKey());
-                    comment.getMediaList().remove(commentMedia);
-                    commentMedia.setComment(null);
+                    mediaRepository.deleteByObjectKeyAndTargetType(updateCommentMediaRequest.objectKey(),
+                            MediaTargetType.COMMENT);
                 }
                 if (updateCommentMediaRequest.operation() == MediaOperation.ADD) {
-                    CommentMedia commentMedia = new CommentMedia(comment, updateCommentMediaRequest.type(), updateCommentMediaRequest.objectKey(), updateCommentMediaRequest.orderIndex());
-                    comment.getMediaList().add(commentMedia);
+                    Media media = new Media(
+                            comment.getId(),
+                            MediaTargetType.COMMENT,
+                            updateCommentMediaRequest.type(),
+                            updateCommentMediaRequest.objectKey(),
+                            updateCommentMediaRequest.orderIndex());
+                    mediaRepository.save(media);
                 }
             }
             Comment savedComment = commentRepository.saveAndFlush(comment);
-            CommentDTO commentDTO = commentMapper.toDTO(savedComment);
+            List<MediaDTO> medias = mediaRepository
+                    .findByTargetIdAndTargetType(savedComment.getId(), MediaTargetType.COMMENT)
+                    .stream()
+                    .map(mediaMapper::toDTO)
+                    .toList();
+            CommentDTO commentDTO = commentMapper.toDTO(savedComment, medias);
 
             return new UpdateCommentResponse(commentDTO);
-        } else throw new ApiException(ResponseCode.CANNOT_UPDATE_COMMENT);
+        } else
+            throw new ApiException(ResponseCode.CANNOT_UPDATE_COMMENT);
     }
 
     @Transactional
     public void deleteComment(String commentId, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth userAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         String userId = userAuth.getUser().getId().toString();
         UUID commentID = UUID.fromString(commentId);
         Comment comment = commentRepository.getCommentById(commentID);
@@ -130,7 +188,8 @@ public class CommentService {
 
         if (userId.equals(userID)) {
             commentRepository.delete(comment);
-        } else throw new ApiException(ResponseCode.CANNOT_DELETE_COMMENT);
+        } else
+            throw new ApiException(ResponseCode.CANNOT_DELETE_COMMENT);
     }
 
     public boolean canViewComment(UUID viewerId, Comment comment) {

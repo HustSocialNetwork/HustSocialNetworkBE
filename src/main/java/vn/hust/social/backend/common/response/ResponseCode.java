@@ -36,6 +36,7 @@ public enum ResponseCode {
     CANNOT_DELETE_COMMENT(4003, "User is not allowed to delete comment", HttpStatus.BAD_REQUEST),
     COMMENT_NOT_FOUND(4004, "Comment not found", HttpStatus.NOT_FOUND),
     CANNOT_VIEW_COMMENT(4005, "User is not allowed to view this comment", HttpStatus.BAD_REQUEST),
+    INVALID_PARENT_COMMENT(4006, "Parent comment doesn't belong in the same post", HttpStatus.BAD_REQUEST),
 
     // ===== FRIENDSHIP =====
     FRIENDSHIP_NOT_FOUND(3004, "Friendship not found", HttpStatus.NOT_FOUND),
@@ -56,7 +57,10 @@ public enum ResponseCode {
     ALREADY_UNLIKED(6002, "You have already unliked this", HttpStatus.BAD_REQUEST),
 
     // ===== PROFILE =====
-    SEARCH_PROFILE_KEYWORD_REQUIRED(6004, "Search profile keyword required", HttpStatus.BAD_REQUEST),
+    SEARCH_PROFILE_KEYWORD_REQUIRED(7004, "Search profile keyword required", HttpStatus.BAD_REQUEST),
+
+    //===== STRATEGIES =====
+    INVALID_TARGET(8001, "Invalid target", HttpStatus.BAD_REQUEST),
 
     // ===== VALIDATION =====
     VALIDATION_ERROR(14001, "Validation error", HttpStatus.BAD_REQUEST),

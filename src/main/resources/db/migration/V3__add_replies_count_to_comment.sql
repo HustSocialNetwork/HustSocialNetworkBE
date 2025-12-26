@@ -1,0 +1,2 @@
+ALTER TABLE comment
+    ADD COLUMN replies_count INT NOT NULL DEFAULT 0;

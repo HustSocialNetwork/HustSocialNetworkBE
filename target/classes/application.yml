@@ -11,9 +11,14 @@ spring:
     password: jolibee1892004
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -52,3 +57,7 @@ minio:
   credentials:
     accessKey: bangdeptrai
     secretKey: jolibee1892004
+
+oauth:
+  client_id: 16daeb59-cec5-469e-886a-69f34976fb3b
+  client_secret: nek8Q~canGot9heeQY8HyW3MGEYtq37IMpaIkcTS

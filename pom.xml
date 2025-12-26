@@ -146,6 +146,18 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>11.20.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>11.20.0</version>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>
@@ -182,6 +194,15 @@
                             <version>1.6.0</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <configuration>
+                    <url>jdbc:mysql://localhost:3306/social</url>
+                    <user>root</user>
+                    <password>jolibee1892004</password>
                 </configuration>
             </plugin>
 
