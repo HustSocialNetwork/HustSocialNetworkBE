@@ -8,15 +8,15 @@ import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.repository.post.PostRepository;
-import vn.hust.social.backend.service.post.PostService;
+import vn.hust.social.backend.service.post.PostPermissionService;
 
 import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class PostTargetStrategy implements TargetStrategy{
+public class PostTargetStrategy implements TargetStrategy {
     private final PostRepository postRepository;
-    private final PostService postService;
+    private final PostPermissionService postPermissionService;
 
     @Override
     public TargetType getTargetType() {
@@ -26,7 +26,7 @@ public class PostTargetStrategy implements TargetStrategy{
     @Override
     public void validateView(User user, UUID targetId) {
         Post post = postRepository.findById(targetId).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
-        if (!postService.canViewPost(user, post)) {
+        if (!postPermissionService.canViewPost(user, post)) {
             throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
         }
     }

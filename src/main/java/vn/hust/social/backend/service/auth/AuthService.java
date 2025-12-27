@@ -31,7 +31,8 @@ public class AuthService {
     private final UserMapper userMapper;
 
     @Transactional
-    public LocalRegisterResponse registerLocal(String firstName, String lastName, String displayName, String email, String rawPassword) {
+    public LocalRegisterResponse registerLocal(String firstName, String lastName, String displayName, String email,
+            String rawPassword) {
         if (userAuthRepository.existsByProviderAndEmail(UserAuth.AuthProvider.LOCAL, email)) {
             throw new ApiException(ResponseCode.EMAIL_ALREADY_REGISTERED);
         }
@@ -66,7 +67,8 @@ public class AuthService {
 
         UserDTO userDto = userMapper.toDTO(user);
 
-        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()), jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
+        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()),
+                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
     }
 
     @Transactional
@@ -87,7 +89,8 @@ public class AuthService {
             throw new ApiException(ResponseCode.INVALID_PASSWORD);
         }
 
-        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()), jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
+        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()),
+                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
     }
 
     @Transactional
@@ -98,7 +101,25 @@ public class AuthService {
         User user = userAuth.getUser();
         UserDTO userDto = userMapper.toDTO(user);
 
-        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()), jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
+        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()),
+                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
+    }
+
+    @Transactional
+    public LoginResponse handleOAuthLogin(java.util.Map<String, Object> meResponse) {
+        String email = (String) meResponse.get("mail");
+        if (userAuthRepository.existsByProviderAndEmail(UserAuth.AuthProvider.M365, email)) {
+            return loginOAuth(email);
+        } else {
+            return registerOAuth(
+                    (String) meResponse.get("givenName"),
+                    (String) meResponse.get("surname"),
+                    ((String) meResponse.get("displayName")).replaceAll("\\s+", "") + "_" +
+                            new java.util.Random().ints(16, 0, 52)
+                                    .mapToObj("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"::charAt)
+                                    .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append),
+                    email);
+        }
     }
 
     public boolean existsByProviderAndEmail(UserAuth.AuthProvider authProvider, String email) {

@@ -26,8 +26,21 @@ import java.util.*;
 public class MediaService {
     private final MinioClient minioClient;
     private final UserAuthRepository userAuthRepository;
+    private final vn.hust.social.backend.repository.media.MediaRepository mediaRepository;
 
-    public List<UploadMediaResponse> getPresignedObjectUrlsForUploading(List<UploadMediaRequest> uploadMediaRequests, String bucketName, String email) {
+    public void saveMedia(java.util.UUID targetId, vn.hust.social.backend.entity.enums.media.MediaTargetType targetType,
+            vn.hust.social.backend.entity.enums.media.MediaType type, String objectKey, int orderIndex) {
+        vn.hust.social.backend.entity.media.Media media = new vn.hust.social.backend.entity.media.Media(targetId,
+                targetType, type, objectKey, orderIndex);
+        mediaRepository.saveAndFlush(media);
+    }
+
+    public void deleteMedia(String objectKey, vn.hust.social.backend.entity.enums.media.MediaTargetType targetType) {
+        mediaRepository.deleteByObjectKeyAndTargetType(objectKey, targetType);
+    }
+
+    public List<UploadMediaResponse> getPresignedObjectUrlsForUploading(List<UploadMediaRequest> uploadMediaRequests,
+            String bucketName, String email) {
         try {
             userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
             List<UploadMediaResponse> getPresignedObjectUrlsForUploadingResponse = new ArrayList<>();
@@ -35,18 +48,19 @@ public class MediaService {
                 Map<String, String> reqParams = new HashMap<>();
                 String date = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
                 String fileExtension = FileNameUtils.getExtension(uploadMediaRequest.name());
-                String objectKey = date + "/" + uploadMediaRequest.type() + "/" + UUID.randomUUID() + "." + fileExtension;
+                String objectKey = date + "/" + uploadMediaRequest.type() + "/" + UUID.randomUUID() + "."
+                        + fileExtension;
 
-                String presignedUrlForUploading =  minioClient.getPresignedObjectUrl(
+                String presignedUrlForUploading = minioClient.getPresignedObjectUrl(
                         GetPresignedObjectUrlArgs.builder()
                                 .method(Method.PUT)
                                 .bucket(bucketName)
                                 .object(objectKey)
                                 .expiry(60 * 60 * 24)
                                 .extraQueryParams(reqParams)
-                                .build()
-                );
-                UploadMediaResponse uploadMediaResponse = new UploadMediaResponse(objectKey, presignedUrlForUploading, MediaOperation.ADD);
+                                .build());
+                UploadMediaResponse uploadMediaResponse = new UploadMediaResponse(objectKey, presignedUrlForUploading,
+                        MediaOperation.ADD);
                 getPresignedObjectUrlsForUploadingResponse.add(uploadMediaResponse);
             }
 
@@ -57,7 +71,8 @@ public class MediaService {
         }
     }
 
-    public DownloadMediasResponse getPresignedObjectUrlsForDownloading(List<DownloadMediaRequest> downloadMediaRequests, String bucketName, String email) {
+    public DownloadMediasResponse getPresignedObjectUrlsForDownloading(List<DownloadMediaRequest> downloadMediaRequests,
+            String bucketName, String email) {
         // lấy vào 1 mảng gồm các objectKey ấy
         try {
             userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
@@ -66,15 +81,14 @@ public class MediaService {
                 String objectKey = downloadMediaRequest.objectKey();
                 Map<String, String> reqParams = new HashMap<>();
 
-                String presignedUrlForDownloading =  minioClient.getPresignedObjectUrl(
+                String presignedUrlForDownloading = minioClient.getPresignedObjectUrl(
                         GetPresignedObjectUrlArgs.builder()
                                 .method(Method.GET)
                                 .bucket(bucketName)
                                 .object(objectKey)
-                                .expiry(60*60*24)
+                                .expiry(60 * 60 * 24)
                                 .extraQueryParams(reqParams)
-                                .build()
-                );
+                                .build());
                 presignedUrlsForDownloading.add(presignedUrlForDownloading);
             }
             return new DownloadMediasResponse(presignedUrlsForDownloading);

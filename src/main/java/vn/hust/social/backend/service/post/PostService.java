@@ -8,7 +8,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.common.response.ResponseCode;
-import vn.hust.social.backend.dto.MediaDTO;
 import vn.hust.social.backend.dto.PostDTO;
 import vn.hust.social.backend.dto.media.CreateMediaRequest;
 import vn.hust.social.backend.dto.media.UpdateMediaRequest;
@@ -22,21 +21,13 @@ import vn.hust.social.backend.dto.post.update.UpdatePostRequest;
 import vn.hust.social.backend.dto.post.update.UpdatePostResponse;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
 import vn.hust.social.backend.entity.enums.media.MediaTargetType;
-import vn.hust.social.backend.entity.enums.post.PostVisibility;
-import vn.hust.social.backend.entity.media.Media;
 import vn.hust.social.backend.entity.post.Post;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
-import vn.hust.social.backend.mapper.MediaMapper;
-import vn.hust.social.backend.mapper.UserMapper;
-import vn.hust.social.backend.repository.block.BlockRepository;
-import vn.hust.social.backend.repository.media.MediaRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
-import vn.hust.social.backend.service.friendship.FriendshipService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,12 +36,26 @@ import java.util.UUID;
 public class PostService {
 
         private final PostRepository postRepository;
-        private final MediaRepository mediaRepository;
         private final UserAuthRepository userAuthRepository;
-        private final BlockRepository blockRepository;
-        private final FriendshipService friendshipService;
-        private final UserMapper userMapper;
-        private final MediaMapper mediaMapper;
+        private final vn.hust.social.backend.service.media.MediaService mediaService;
+        private final PostDTOMapper postDTOMapper;
+        private final PostPermissionService postPermissionService;
+        // Still needed for create logic unless moved? createPost creates User
+        // object for Post... wait.
+        // Post construction uses User entity. postDTOMapper uses UserMapper.
+        // PostService createPost needs to return PostDTO.
+        // Yes, but PostService creates a 'Post' entity which requires a 'User' entity.
+        // And to return PostDTO we use postDTOMapper.
+        // So we don't need UserMapper directly if we only use it for DTOs.
+        // Wait, createPostRequest doesn't use UserMapper.
+        // Let's check existing logic: `User user = userAuth.getUser(); Post post = new
+        // Post(user, ...)`
+        // logic ends with `postDTO = new PostDTO(..., userMapper.toDTO(user), ...)`
+        // So postDTOMapper handles the user mapping.
+        // So UserMapper is NOT needed here anymore!
+
+        // Only PostRepository, UserAuthRepository, MediaService, PostDTOMapper,
+        // PostPermissionService.
 
         @Transactional
         public GetPostByPostIdResponse getPostByPostId(String postId, String email) {
@@ -60,27 +65,10 @@ public class PostService {
                 Post post = postRepository.findByPostId(postID)
                                 .orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-                if (!canViewPost(userAuth.getUser(), post))
+                if (!postPermissionService.canViewPost(userAuth.getUser(), post))
                         throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
 
-                List<MediaDTO> medias = mediaRepository
-                                .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
-                                .stream()
-                                .map(mediaMapper::toDTO)
-                                .toList();
-                User user = post.getUser();
-                PostDTO postDTO = new PostDTO(
-                                post.getPostId(),
-                                userMapper.toDTO(user),
-                                post.getContent(),
-                                post.getStatus(),
-                                post.getVisibility(),
-                                post.getLikesCount(),
-                                post.getCommentsCount(),
-                                medias,
-                                post.getCreatedAt());
-
-                return new GetPostByPostIdResponse(postDTO);
+                return new GetPostByPostIdResponse(postDTOMapper.toDTO(post));
         }
 
         @Transactional
@@ -91,28 +79,18 @@ public class PostService {
                 UUID ownerId = UUID.fromString(userId);
                 Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
 
+                // Note: Logic for visibility check is improved but here we use repository
+                // filter.
+                // The repository method 'findPostsByUser' should ideally already filter visible
+                // posts or we filter after?
+                // Original code: postRepository.findPostsByUser(ownerId, viewerId, pageable);
+                // This query likely handles visibility. We assume repository queries are
+                // correct.
                 Page<Post> posts = postRepository.findPostsByUser(ownerId, viewerId, pageable);
 
-                List<PostDTO> postDTOS = new ArrayList<>();
-                for (Post post : posts.getContent()) {
-                        List<MediaDTO> medias = mediaRepository
-                                        .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
-                                        .stream()
-                                        .map(mediaMapper::toDTO)
-                                        .toList();
-                        User user = post.getUser();
-                        PostDTO postDTO = new PostDTO(
-                                        post.getPostId(),
-                                        userMapper.toDTO(user),
-                                        post.getContent(),
-                                        post.getStatus(),
-                                        post.getVisibility(),
-                                        post.getLikesCount(),
-                                        post.getCommentsCount(),
-                                        medias,
-                                        post.getCreatedAt());
-                        postDTOS.add(postDTO);
-                }
+                List<PostDTO> postDTOS = posts.getContent().stream()
+                                .map(postDTOMapper::toDTO)
+                                .toList();
 
                 return new GetPostsByUserIdResponse(postDTOS);
         }
@@ -127,26 +105,9 @@ public class PostService {
 
                 Page<Post> posts = postRepository.findAllVisibleToViewer(viewerId, pageable);
 
-                List<PostDTO> postDTOS = new ArrayList<>();
-                for (Post post : posts.getContent()) {
-                        List<MediaDTO> medias = mediaRepository
-                                        .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
-                                        .stream()
-                                        .map(mediaMapper::toDTO)
-                                        .toList();
-                        User user = post.getUser();
-                        PostDTO postDTO = new PostDTO(
-                                        post.getPostId(),
-                                        userMapper.toDTO(user),
-                                        post.getContent(),
-                                        post.getStatus(),
-                                        post.getVisibility(),
-                                        post.getLikesCount(),
-                                        post.getCommentsCount(),
-                                        medias,
-                                        post.getCreatedAt());
-                        postDTOS.add(postDTO);
-                }
+                List<PostDTO> postDTOS = posts.getContent().stream()
+                                .map(postDTOMapper::toDTO)
+                                .toList();
 
                 return new GetPostsByUserIdResponse(postDTOS);
         }
@@ -159,26 +120,9 @@ public class PostService {
                 Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
                 Page<Post> posts = postRepository.findPostsOfFriends(viewerId, pageable);
 
-                List<PostDTO> postDTOS = new ArrayList<>();
-                for (Post post : posts.getContent()) {
-                        List<MediaDTO> medias = mediaRepository
-                                        .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
-                                        .stream()
-                                        .map(mediaMapper::toDTO)
-                                        .toList();
-                        User user = post.getUser();
-                        PostDTO postDTO = new PostDTO(
-                                        post.getPostId(),
-                                        userMapper.toDTO(user),
-                                        post.getContent(),
-                                        post.getStatus(),
-                                        post.getVisibility(),
-                                        post.getLikesCount(),
-                                        post.getCommentsCount(),
-                                        medias,
-                                        post.getCreatedAt());
-                        postDTOS.add(postDTO);
-                }
+                List<PostDTO> postDTOS = posts.getContent().stream()
+                                .map(postDTOMapper::toDTO)
+                                .toList();
 
                 return new GetPostsOfFollowingResponse(postDTOS);
         }
@@ -192,38 +136,27 @@ public class PostService {
                 postRepository.saveAndFlush(post);
 
                 for (CreateMediaRequest postMedia : createPostRequest.createPostMediaRequests()) {
-                        Media media = new Media(post.getPostId(), MediaTargetType.POST, postMedia.type(),
+                        mediaService.saveMedia(
+                                        post.getPostId(),
+                                        MediaTargetType.POST,
+                                        postMedia.type(),
                                         postMedia.objectKey(),
                                         postMedia.orderIndex());
-                        mediaRepository.saveAndFlush(media);
                 }
 
-                postRepository.saveAndFlush(post);
+                // We fetch it back or just construct DTO?
+                // toDTO fetches media from DB. Since we just saved media, it should be fine.
+                // However, we might want to ensure consistency.
+                // The original code re-fetched media via FindByTargetId... so
+                // map(postDTOMapper::toDTO) is correct.
 
-                List<MediaDTO> medias = mediaRepository
-                                .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
-                                .stream()
-                                .map(mediaMapper::toDTO)
-                                .toList();
-                PostDTO postDTO = new PostDTO(
-                                post.getPostId(),
-                                userMapper.toDTO(user),
-                                post.getContent(),
-                                post.getStatus(),
-                                post.getVisibility(),
-                                post.getLikesCount(),
-                                post.getCommentsCount(),
-                                medias,
-                                post.getCreatedAt());
-
-                return new CreatePostResponse(postDTO);
+                return new CreatePostResponse(postDTOMapper.toDTO(post));
         }
 
         @Transactional
         public UpdatePostResponse updatePost(String postId, UpdatePostRequest updatePostRequest, String email) {
                 UserAuth userAuth = userAuthRepository.findByEmail(email)
                                 .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
-                User user = userAuth.getUser();
                 String userId = userAuth.getUser().getId().toString();
 
                 UUID postID = UUID.fromString(postId);
@@ -237,36 +170,21 @@ public class PostService {
 
                         for (UpdateMediaRequest updatePostMediaRequest : updatePostRequest.updatePostMediaRequests()) {
                                 if (updatePostMediaRequest.operation() == MediaOperation.DELETE) {
-                                        mediaRepository.deleteByObjectKeyAndTargetType(
-                                                        updatePostMediaRequest.objectKey(),
+                                        mediaService.deleteMedia(updatePostMediaRequest.objectKey(),
                                                         MediaTargetType.POST);
                                 }
                                 if (updatePostMediaRequest.operation() == MediaOperation.ADD) {
-                                        Media media = new Media(post.getPostId(), MediaTargetType.POST,
+                                        mediaService.saveMedia(
+                                                        post.getPostId(),
+                                                        MediaTargetType.POST,
                                                         updatePostMediaRequest.type(),
                                                         updatePostMediaRequest.objectKey(),
                                                         updatePostMediaRequest.orderIndex());
-                                        mediaRepository.saveAndFlush(media);
                                 }
                         }
                         postRepository.saveAndFlush(post);
 
-                        List<MediaDTO> medias = mediaRepository
-                                        .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
-                                        .stream()
-                                        .map(mediaMapper::toDTO)
-                                        .toList();
-                        PostDTO postDTO = new PostDTO(
-                                        post.getPostId(),
-                                        userMapper.toDTO(user),
-                                        post.getContent(),
-                                        post.getStatus(),
-                                        post.getVisibility(),
-                                        post.getLikesCount(),
-                                        post.getCommentsCount(),
-                                        medias,
-                                        post.getCreatedAt());
-                        return new UpdatePostResponse(postDTO);
+                        return new UpdatePostResponse(postDTOMapper.toDTO(post));
                 } else
                         throw new ApiException(ResponseCode.CANNOT_UPDATE_POST);
         }
@@ -283,48 +201,30 @@ public class PostService {
                 String userID = post.getUser().getId().toString();
 
                 if (userID.equals(userId)) {
-                        postRepository.delete(post);
-                        List<MediaDTO> medias = mediaRepository
-                                        .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
-                                        .stream()
-                                        .map(mediaMapper::toDTO)
-                                        .toList();
-                        User user = post.getUser();
-                        PostDTO postDTO = new PostDTO(
-                                        post.getPostId(),
-                                        userMapper.toDTO(user),
-                                        post.getContent(),
-                                        post.getStatus(),
-                                        post.getVisibility(),
-                                        post.getLikesCount(),
-                                        post.getCommentsCount(),
-                                        medias,
-                                        post.getCreatedAt());
+                        // Mapping BEFORE delete? Original code deleted first, then mapped.
+                        // Wait, original code: postRepository.delete(post); then fetched media.
+                        // If post is deleted, can we fetch media?
+                        // Usually if there is CASCADE delete, media is gone.
+                        // If manual delete, existing code works.
+                        // But if we delete post, `postDTOMapper.toDTO(post)` might fail if it relies on
+                        // lazy loading or if we want to return the state BEFORE delete.
+                        // Original code: delete(post), then findMediaByTargetId...
+                        // If Cascade is ON, media is gone.
+                        // In original code lines 286-291: delete(post);
+                        // mediaRepository.findByTargetId...
+                        // If this worked, it implies no cascade or media remains.
+                        // Let's stick to original order but capture state if needed.
+                        // Actually, `toDTO` implementation fetches media by `post.getPostId()`.
+                        // If we delete post, we can still call `toDTO(post)` AS LONG AS media is not
+                        // deleted.
+                        // If Media is deleted by cascade, `toDTO` will return empty media list.
+                        // Original code fetched media after delete.
 
+                        // To be safe and better: map first, then delete.
+                        PostDTO postDTO = postDTOMapper.toDTO(post);
+                        postRepository.delete(post);
                         return new DeletePostResponse(postDTO);
                 } else
                         throw new ApiException(ResponseCode.CANNOT_DELETE_POST);
-        }
-
-        public boolean canViewPost(User viewer, Post post) {
-                if (blockRepository.existsByBlockerIdAndBlockedId(viewer.getId(), post.getUser().getId())) {
-                        return false;
-                }
-
-                if (blockRepository.existsByBlockerIdAndBlockedId(post.getUser().getId(), viewer.getId())) {
-                        return false;
-                }
-
-                if (post.getVisibility() == PostVisibility.PUBLIC)
-                        return true;
-
-                if (post.getUser().getId().equals(viewer.getId()))
-                        return true;
-
-                if (post.getVisibility() == PostVisibility.FRIENDS) {
-                        return friendshipService.isFriend(viewer.getId(), post.getUser().getId());
-                }
-
-                return false;
         }
 }

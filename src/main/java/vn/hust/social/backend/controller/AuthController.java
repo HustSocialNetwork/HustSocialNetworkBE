@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.auth.*;
-import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.service.auth.AuthService;
 import vn.hust.social.backend.service.auth.EmailVerificationService;
@@ -30,8 +29,7 @@ public class AuthController {
                 request.getLastName(),
                 request.getDisplayName(),
                 request.getEmail(),
-                request.getPassword()
-        );
+                request.getPassword());
         emailVerificationService.sendVerificationEmail(request.getEmail(), request.getDisplayName());
         return ApiResponse.success(response);
     }
@@ -44,23 +42,7 @@ public class AuthController {
     @PostMapping("/login/oauth")
     public ApiResponse<LoginResponse> loginOAuth(@RequestBody OAuthLoginRequest request) {
         Map<String, Object> meResponse = m365Service.getUserInfo(request.getAccessToken());
-        String email = (String) meResponse.get("mail");
-
-        LoginResponse response;
-        if (authService.existsByProviderAndEmail(UserAuth.AuthProvider.M365, email)) {
-            response = authService.loginOAuth(email);
-        } else {
-            response = authService.registerOAuth(
-                    (String) meResponse.get("givenName"),
-                    (String) meResponse.get("surname"),
-        ((String) meResponse.get("displayName")).replaceAll("\\s+", "") + "_" +
-                new java.util.Random().ints(16, 0, 52)
-                        .mapToObj("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"::charAt)
-                        .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append),
-                    email
-            );
-        }
-
+        LoginResponse response = authService.handleOAuthLogin(meResponse);
         return ApiResponse.success(response);
     }
 

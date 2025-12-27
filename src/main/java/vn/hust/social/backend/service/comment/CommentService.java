@@ -28,7 +28,7 @@ import vn.hust.social.backend.repository.media.MediaRepository;
 import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
-import vn.hust.social.backend.service.post.PostService;
+import vn.hust.social.backend.service.post.PostPermissionService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class CommentService {
     private final UserAuthRepository userAuthRepository;
     private final CommentRepository commentRepository;
     private final MediaRepository mediaRepository;
-    private final PostService postService;
+    private final PostPermissionService postPermissionService;
     private final BlockRepository blockRepository;
     private final CommentMapper commentMapper;
     private final MediaMapper mediaMapper;
@@ -54,7 +54,7 @@ public class CommentService {
         Post post = postRepository.findByPostId(postID)
                 .orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-        if (!postService.canViewPost(userAuth.getUser(), post))
+        if (!postPermissionService.canViewPost(userAuth.getUser(), post))
             throw new ApiException(ResponseCode.CANNOT_VIEW_COMMENTS);
 
         List<Comment> comments = commentRepository.findByPostId(post.getPostId());
@@ -86,7 +86,7 @@ public class CommentService {
         Post post = postRepository.findByPostId(UUID.fromString(request.postId()))
                 .orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
 
-        if (!postService.canViewPost(commenter, post)) {
+        if (!postPermissionService.canViewPost(commenter, post)) {
             throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
         }
 
