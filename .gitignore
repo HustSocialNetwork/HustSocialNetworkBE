@@ -27,4 +27,4 @@ replay_pid*
 *.iml
 
 # target folder
-./target
+/target

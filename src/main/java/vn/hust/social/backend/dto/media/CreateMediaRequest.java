@@ -5,5 +5,6 @@ import vn.hust.social.backend.entity.enums.media.MediaType;
 public record CreateMediaRequest(
         String objectKey,
         MediaType type,
-        int orderIndex) {
+        int orderIndex
+) {
 }

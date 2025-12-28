@@ -59,6 +59,10 @@ public enum ResponseCode {
     // ===== PROFILE =====
     SEARCH_PROFILE_KEYWORD_REQUIRED(7004, "Search profile keyword required", HttpStatus.BAD_REQUEST),
 
+    // ===== CONVERSATION =====
+    CONVERSATION_NOT_FOUND(9001, "Conversation not found", HttpStatus.NOT_FOUND),
+    CANNOT_ACCESS_MESSAGES(9002, "User is not allowed to access messages in this conversation", HttpStatus.FORBIDDEN),
+
     //===== STRATEGIES =====
     INVALID_TARGET(8001, "Invalid target", HttpStatus.BAD_REQUEST),
 
