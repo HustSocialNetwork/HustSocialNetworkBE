@@ -12,9 +12,13 @@ import vn.hust.social.backend.dto.media.download.DownloadMediaRequest;
 import vn.hust.social.backend.dto.media.download.DownloadMediasResponse;
 import vn.hust.social.backend.dto.media.upload.UploadMediaRequest;
 import vn.hust.social.backend.dto.media.upload.UploadMediaResponse;
+import vn.hust.social.backend.entity.media.Media;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
+import vn.hust.social.backend.entity.enums.media.MediaTargetType;
+import vn.hust.social.backend.entity.enums.media.MediaType;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
+import vn.hust.social.backend.repository.media.MediaRepository;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -26,16 +30,15 @@ import java.util.*;
 public class MediaService {
     private final MinioClient minioClient;
     private final UserAuthRepository userAuthRepository;
-    private final vn.hust.social.backend.repository.media.MediaRepository mediaRepository;
+    private final MediaRepository mediaRepository;
 
-    public void saveMedia(java.util.UUID targetId, vn.hust.social.backend.entity.enums.media.MediaTargetType targetType,
-            vn.hust.social.backend.entity.enums.media.MediaType type, String objectKey, int orderIndex) {
-        vn.hust.social.backend.entity.media.Media media = new vn.hust.social.backend.entity.media.Media(targetId,
-                targetType, type, objectKey, orderIndex);
+    public void saveMedia(java.util.UUID targetId, MediaTargetType targetType,
+            MediaType type, String objectKey, int orderIndex) {
+        Media media = new Media(targetId, targetType, type, objectKey, orderIndex);
         mediaRepository.saveAndFlush(media);
     }
 
-    public void deleteMedia(String objectKey, vn.hust.social.backend.entity.enums.media.MediaTargetType targetType) {
+    public void deleteMedia(String objectKey, MediaTargetType targetType) {
         mediaRepository.deleteByObjectKeyAndTargetType(objectKey, targetType);
     }
 

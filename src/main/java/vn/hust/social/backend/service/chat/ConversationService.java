@@ -1,11 +1,23 @@
 package vn.hust.social.backend.service.chat;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import vn.hust.social.backend.exception.WsException;
+import vn.hust.social.backend.common.response.WsResponse;
+import vn.hust.social.backend.dto.chat.WsMessageResponse;
+import vn.hust.social.backend.dto.chat.WsSendMessageRequest;
+import vn.hust.social.backend.entity.enums.chat.ConversationType;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.common.response.ResponseCode;
+import vn.hust.social.backend.dto.chat.WsReadRequest;
+import vn.hust.social.backend.dto.chat.WsReadResponse;
+import vn.hust.social.backend.dto.chat.WsTypingRequest;
+import vn.hust.social.backend.dto.chat.WsTypingResponse;
+import vn.hust.social.backend.entity.chat.MessageRead;
 import vn.hust.social.backend.dto.MediaDTO;
 import vn.hust.social.backend.dto.MessageDTO;
 import vn.hust.social.backend.dto.chat.GetMessagesResponse;
@@ -29,13 +41,16 @@ import vn.hust.social.backend.mapper.ConversationMapper;
 import vn.hust.social.backend.mapper.ConversationMemberMapper;
 import vn.hust.social.backend.mapper.MediaMapper;
 import vn.hust.social.backend.mapper.MessageMapper;
+import vn.hust.social.backend.mapper.UserMapper;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.repository.chat.ConversationMemberRepository;
 import vn.hust.social.backend.repository.chat.ConversationRepository;
+import vn.hust.social.backend.repository.chat.MessageReadRepository;
 import vn.hust.social.backend.repository.chat.MessageRepository;
 import vn.hust.social.backend.repository.media.MediaRepository;
 import vn.hust.social.backend.repository.user.UserRepository;
 
+import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,17 +59,21 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ConversationService {
+        private final SimpMessagingTemplate messagingTemplate;
         private final UserRepository userRepository;
         private final UserAuthRepository userAuthRepository;
         private final ConversationMemberRepository conversationMemberRepository;
         private final ConversationRepository conversationRepository;
         private final MessageRepository messageRepository;
+        private final MessageReadRepository messageReadRepository;
         private final MediaRepository mediaRepository;
         private final ConversationMapper conversationMapper;
         private final ConversationMemberMapper conversationMemberMapper;
         private final MediaMapper mediaMapper;
         private final MessageMapper messageMapper;
+        private final UserMapper userMapper;
 
         @Transactional(readOnly = true)
         public List<GetConversationResponse> getConversationsOfUser(String email) {
@@ -94,6 +113,175 @@ public class ConversationService {
                                                 msg.getCreatedAt(),
                                                 Collections.emptyList()))
                                 .toList();
+        }
+
+        @Transactional
+        public void sendWsMessage(WsSendMessageRequest request, Principal principal) {
+                String email = principal.getName();
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new WsException(ResponseCode.USER_NOT_FOUND));
+                User sender = userAuth.getUser();
+
+                Conversation conversation = conversationRepository.findById(request.conversationId())
+                                .orElseThrow(() -> new WsException(ResponseCode.CONVERSATION_NOT_FOUND));
+
+                boolean isMember = conversationMemberRepository.findByConversation(conversation)
+                                .stream()
+                                .anyMatch(m -> m.getMember().getId().equals(sender.getId()));
+
+                if (!isMember) {
+                        throw new WsException(ResponseCode.CANNOT_ACCESS_MESSAGES);
+                }
+
+                Message message = new Message(conversation, sender, request.content(), MessageType.USER);
+                message = messageRepository.save(message);
+
+                List<MediaDTO> mediaDTOs = new ArrayList<>();
+                if (request.medias() != null && !request.medias().isEmpty()) {
+                        for (CreateMediaRequest mediaRequest : request.medias()) {
+                                Media media = new Media(
+                                                message.getId(),
+                                                MediaTargetType.MESSAGE,
+                                                mediaRequest.type(),
+                                                mediaRequest.objectKey(),
+                                                mediaRequest.orderIndex());
+                                mediaRepository.save(media);
+                                mediaDTOs.add(mediaMapper.toDTO(media));
+                        }
+                }
+
+                WsMessageResponse messageResponse = new WsMessageResponse(
+                                messageMapper.toDTO(message),
+                                mediaDTOs);
+                WsResponse<WsMessageResponse> response = WsResponse.success(messageResponse);
+
+                if (conversation.getType() == ConversationType.GROUP) {
+                        messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getId(), response);
+                } else {
+
+                        User recipient = conversationMemberRepository.findByConversation(conversation).stream()
+                                        .filter(m -> !m.getMember().getId().equals(sender.getId()))
+                                        .findFirst()
+                                        .map(ConversationMember::getMember)
+                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        UserAuth recipientAuth = userAuthRepository.findByUserId(recipient.getId()).stream()
+                                        .findFirst()
+                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        messagingTemplate.convertAndSendToUser(
+                                        recipientAuth.getEmail(),
+                                        "/queue/messages",
+                                        response);
+
+                        // Send ack to sender
+                        messagingTemplate.convertAndSendToUser(
+                                        userAuth.getEmail(),
+                                        "/queue/messages",
+                                        response);
+                }
+        }
+
+        @Transactional(readOnly = true)
+        public void broadcastTyping(WsTypingRequest request, Principal principal) {
+                String email = principal.getName();
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new WsException(ResponseCode.USER_NOT_FOUND));
+                User sender = userAuth.getUser();
+
+                Conversation conversation = conversationRepository.findById(request.conversationId())
+                                .orElseThrow(() -> new WsException(ResponseCode.CONVERSATION_NOT_FOUND));
+
+                boolean isMember = conversationMemberRepository.findByConversation(conversation)
+                                .stream()
+                                .anyMatch(m -> m.getMember().getId().equals(sender.getId()));
+
+                if (!isMember) {
+                        throw new WsException(ResponseCode.CANNOT_ACCESS_MESSAGES);
+                }
+
+                WsTypingResponse response = new WsTypingResponse(
+                                conversation.getId(),
+                                userMapper.toDTO(sender),
+                                request.isTyping());
+                WsResponse<WsTypingResponse> wsResponse = WsResponse.success(response);
+
+                if (conversation.getType() == ConversationType.GROUP) {
+                        messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getId(), wsResponse);
+                } else {
+                        User recipient = conversationMemberRepository.findByConversation(conversation).stream()
+                                        .filter(m -> !m.getMember().getId().equals(sender.getId()))
+                                        .findFirst()
+                                        .map(ConversationMember::getMember)
+                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        UserAuth recipientAuth = userAuthRepository.findByUserId(recipient.getId()).stream()
+                                        .findFirst()
+                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        messagingTemplate.convertAndSendToUser(
+                                        recipientAuth.getEmail(),
+                                        "/queue/typing",
+                                        wsResponse);
+                }
+        }
+
+        @Transactional
+        public void markMessageAsRead(WsReadRequest request, Principal principal) {
+                String email = principal.getName();
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new WsException(ResponseCode.USER_NOT_FOUND));
+                User reader = userAuth.getUser();
+
+                Conversation conversation = conversationRepository.findById(request.conversationId())
+                                .orElseThrow(() -> new WsException(ResponseCode.CONVERSATION_NOT_FOUND));
+
+                boolean isMember = conversationMemberRepository.findByConversation(conversation)
+                                .stream()
+                                .anyMatch(m -> m.getMember().getId().equals(reader.getId()));
+
+                if (!isMember) {
+                        throw new WsException(ResponseCode.CANNOT_ACCESS_MESSAGES);
+                }
+
+                Message message = messageRepository.findById(request.messageId())
+                                .orElseThrow(() -> new WsException(ResponseCode.MESSAGE_NOT_FOUND));
+
+                if (!message.getConversation().getId().equals(conversation.getId())) {
+                        throw new WsException(ResponseCode.MESSAGE_NOT_FOUND);
+                }
+
+                // Persist read status if not exists
+                if (messageReadRepository.findByMessageAndReader(message, reader).isEmpty()) {
+                        MessageRead messageRead = new MessageRead(message, reader);
+                        messageReadRepository.save(messageRead);
+                }
+
+                WsReadResponse response = new WsReadResponse(
+                                conversation.getId(),
+                                message.getId(),
+                                userMapper.toDTO(reader),
+                                Instant.now());
+                WsResponse<WsReadResponse> wsResponse = WsResponse.success(response);
+
+                if (conversation.getType() == ConversationType.GROUP) {
+                        messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getId(), wsResponse);
+                } else {
+                        User recipient = conversationMemberRepository.findByConversation(conversation).stream()
+                                        .filter(m -> !m.getMember().getId().equals(reader.getId()))
+                                        .findFirst()
+                                        .map(ConversationMember::getMember)
+                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        UserAuth recipientAuth = userAuthRepository.findByUserId(recipient.getId()).stream()
+                                        .findFirst()
+                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        messagingTemplate.convertAndSendToUser(
+                                        recipientAuth.getEmail(),
+                                        "/queue/read",
+                                        wsResponse);
+                }
         }
 
         @Transactional

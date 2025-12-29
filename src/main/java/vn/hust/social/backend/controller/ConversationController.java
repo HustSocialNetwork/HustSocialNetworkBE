@@ -14,6 +14,13 @@ import vn.hust.social.backend.dto.chat.CreateConversationRequest;
 import vn.hust.social.backend.dto.chat.CreateConversationResponse;
 import vn.hust.social.backend.dto.chat.GetConversationResponse;
 
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import vn.hust.social.backend.dto.chat.WsReadRequest;
+import vn.hust.social.backend.dto.chat.WsSendMessageRequest;
+import vn.hust.social.backend.dto.chat.WsTypingRequest;
+import java.security.Principal;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +30,27 @@ import java.util.UUID;
 public class ConversationController {
     private final JwtUtils jwtUtils;
     private final ConversationService conversationService;
+
+    @MessageMapping("/chat.sendMessage")
+    public void sendWsMessage(
+            @Payload WsSendMessageRequest request,
+            Principal principal) {
+        conversationService.sendWsMessage(request, principal);
+    }
+
+    @MessageMapping("/chat.typing")
+    public void broadcastTyping(
+            @Payload WsTypingRequest request,
+            Principal principal) {
+        conversationService.broadcastTyping(request, principal);
+    }
+
+    @MessageMapping("/chat.read")
+    public void markMessageAsRead(
+            @Payload WsReadRequest request,
+            Principal principal) {
+        conversationService.markMessageAsRead(request, principal);
+    }
 
     @PostMapping
     public ApiResponse<CreateConversationResponse> createConversation(

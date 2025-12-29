@@ -20,7 +20,8 @@ public enum ResponseCode {
     INVALID_PASSWORD(2005, "Invalid password", HttpStatus.BAD_REQUEST),
     EMAIL_SENDING_FAILED(2006, "Failed to send verification email", HttpStatus.SERVICE_UNAVAILABLE),
 
-    INVALID_OR_EXPIRED_EMAIL_VERIFICATION_TOKEN(2007, "Invalid or expired email verification token", HttpStatus.BAD_REQUEST),
+    INVALID_OR_EXPIRED_EMAIL_VERIFICATION_TOKEN(2007, "Invalid or expired email verification token",
+            HttpStatus.BAD_REQUEST),
 
     POST_VIEWER_NOT_FOUND(2008, "Post viewer not found", HttpStatus.NOT_FOUND),
 
@@ -62,8 +63,10 @@ public enum ResponseCode {
     // ===== CONVERSATION =====
     CONVERSATION_NOT_FOUND(9001, "Conversation not found", HttpStatus.NOT_FOUND),
     CANNOT_ACCESS_MESSAGES(9002, "User is not allowed to access messages in this conversation", HttpStatus.FORBIDDEN),
+    RECIPIENT_NOT_FOUND(9003, "Recipient not found", HttpStatus.NOT_FOUND),
+    MESSAGE_NOT_FOUND(9004, "Message not found", HttpStatus.NOT_FOUND),
 
-    //===== STRATEGIES =====
+    // ===== STRATEGIES =====
     INVALID_TARGET(8001, "Invalid target", HttpStatus.BAD_REQUEST),
 
     // ===== VALIDATION =====
