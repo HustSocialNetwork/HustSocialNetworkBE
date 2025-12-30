@@ -72,9 +72,10 @@ public class ConversationController {
             @PathVariable UUID conversationId,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(required = false) Long after,
+            @RequestParam(required = false) Long before,
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ApiResponse.success(conversationService.getMessages(conversationId, limit, after, email));
+        return ApiResponse.success(conversationService.getMessages(conversationId, limit, after, before, email));
     }
 
     @PostMapping("/{conversationId}/messages")

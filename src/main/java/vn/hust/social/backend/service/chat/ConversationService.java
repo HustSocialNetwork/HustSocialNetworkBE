@@ -90,14 +90,19 @@ public class ConversationService {
         }
 
         @Transactional(readOnly = true)
-        public List<GetMessagesResponse> getMessages(UUID conversationId, int limit, Long after, String email) {
+        public List<GetMessagesResponse> getMessages(UUID conversationId, int limit, Long after, Long before,
+                        String email) {
                 User user = getUserFromEmail(email);
                 Conversation conversation = validateAndGetConversation(conversationId, user);
 
                 Pageable pageable = PageRequest.of(0, limit);
                 List<Message> messages;
 
-                if (after != null) {
+                if (before != null) {
+                        Instant beforeInstant = Instant.ofEpochMilli(before);
+                        messages = messageRepository.findByConversationBeforeTimestamp(conversation, beforeInstant,
+                                        pageable);
+                } else if (after != null) {
                         Instant afterInstant = Instant.ofEpochMilli(after);
                         messages = messageRepository.findByConversationAfterTimestamp(conversation, afterInstant,
                                         pageable);
