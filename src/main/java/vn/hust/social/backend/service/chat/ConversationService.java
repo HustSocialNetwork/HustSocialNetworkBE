@@ -4,44 +4,29 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import vn.hust.social.backend.exception.WsException;
-import vn.hust.social.backend.common.response.WsResponse;
-import vn.hust.social.backend.dto.chat.WsMessageResponse;
-import vn.hust.social.backend.dto.chat.WsSendMessageRequest;
-import vn.hust.social.backend.entity.enums.chat.ConversationType;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.common.response.ResponseCode;
-import vn.hust.social.backend.dto.chat.WsReadRequest;
-import vn.hust.social.backend.dto.chat.WsReadResponse;
-import vn.hust.social.backend.dto.chat.WsTypingRequest;
-import vn.hust.social.backend.dto.chat.WsTypingResponse;
-import vn.hust.social.backend.entity.chat.MessageRead;
+import vn.hust.social.backend.common.response.WsResponse;
 import vn.hust.social.backend.dto.MediaDTO;
 import vn.hust.social.backend.dto.MessageDTO;
-import vn.hust.social.backend.dto.chat.GetMessagesResponse;
-import vn.hust.social.backend.dto.chat.SendMessageRequest;
-import vn.hust.social.backend.dto.chat.CreateConversationRequest;
-import vn.hust.social.backend.dto.chat.CreateConversationResponse;
-import vn.hust.social.backend.dto.chat.GetConversationResponse;
-import vn.hust.social.backend.dto.chat.SendMessageWithMediaResponse;
+import vn.hust.social.backend.dto.chat.*;
 import vn.hust.social.backend.dto.media.CreateMediaRequest;
-import vn.hust.social.backend.entity.user.User;
-import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.entity.chat.Conversation;
 import vn.hust.social.backend.entity.chat.ConversationMember;
 import vn.hust.social.backend.entity.chat.Message;
+import vn.hust.social.backend.entity.chat.MessageRead;
+import vn.hust.social.backend.entity.enums.chat.ConversationType;
 import vn.hust.social.backend.entity.enums.chat.MemberType;
 import vn.hust.social.backend.entity.enums.chat.MessageType;
 import vn.hust.social.backend.entity.enums.media.MediaTargetType;
 import vn.hust.social.backend.entity.media.Media;
+import vn.hust.social.backend.entity.user.User;
+import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
-import vn.hust.social.backend.mapper.ConversationMapper;
-import vn.hust.social.backend.mapper.ConversationMemberMapper;
-import vn.hust.social.backend.mapper.MediaMapper;
-import vn.hust.social.backend.mapper.MessageMapper;
-import vn.hust.social.backend.mapper.UserMapper;
+import vn.hust.social.backend.exception.WsException;
+import vn.hust.social.backend.mapper.*;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.repository.chat.ConversationMemberRepository;
 import vn.hust.social.backend.repository.chat.ConversationRepository;
@@ -118,73 +103,6 @@ public class ConversationService {
                                                 msg.getCreatedAt(),
                                                 Collections.emptyList()))
                                 .toList();
-        }
-
-        @Transactional
-        public void sendWsMessage(WsSendMessageRequest request, Principal principal) {
-                String email = principal.getName();
-                UserAuth userAuth = userAuthRepository.findByEmail(email)
-                                .orElseThrow(() -> new WsException(ResponseCode.USER_NOT_FOUND));
-                User sender = userAuth.getUser();
-
-                Conversation conversation = conversationRepository.findById(request.conversationId())
-                                .orElseThrow(() -> new WsException(ResponseCode.CONVERSATION_NOT_FOUND));
-
-                boolean isMember = conversationMemberRepository.findByConversation(conversation)
-                                .stream()
-                                .anyMatch(m -> m.getMember().getId().equals(sender.getId()));
-
-                if (!isMember) {
-                        throw new WsException(ResponseCode.CANNOT_ACCESS_MESSAGES);
-                }
-
-                Message message = new Message(conversation, sender, request.content(), MessageType.USER);
-                message = messageRepository.save(message);
-
-                List<MediaDTO> mediaDTOs = new ArrayList<>();
-                if (request.medias() != null && !request.medias().isEmpty()) {
-                        for (CreateMediaRequest mediaRequest : request.medias()) {
-                                Media media = new Media(
-                                                message.getId(),
-                                                MediaTargetType.MESSAGE,
-                                                mediaRequest.type(),
-                                                mediaRequest.objectKey(),
-                                                mediaRequest.orderIndex());
-                                mediaRepository.save(media);
-                                mediaDTOs.add(mediaMapper.toDTO(media));
-                        }
-                }
-
-                WsMessageResponse messageResponse = new WsMessageResponse(
-                                messageMapper.toDTO(message),
-                                mediaDTOs);
-                WsResponse<WsMessageResponse> response = WsResponse.success(messageResponse);
-
-                if (conversation.getType() == ConversationType.GROUP) {
-                        messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getId(), response);
-                } else {
-
-                        User recipient = conversationMemberRepository.findByConversation(conversation).stream()
-                                        .filter(m -> !m.getMember().getId().equals(sender.getId()))
-                                        .findFirst()
-                                        .map(ConversationMember::getMember)
-                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
-
-                        UserAuth recipientAuth = userAuthRepository.findByUserId(recipient.getId()).stream()
-                                        .findFirst()
-                                        .orElseThrow(() -> new WsException(ResponseCode.RECIPIENT_NOT_FOUND));
-
-                        messagingTemplate.convertAndSendToUser(
-                                        recipientAuth.getEmail(),
-                                        "/queue/messages",
-                                        response);
-
-                        // Send ack to sender
-                        messagingTemplate.convertAndSendToUser(
-                                        userAuth.getEmail(),
-                                        "/queue/messages",
-                                        response);
-                }
         }
 
         @Transactional(readOnly = true)
@@ -294,6 +212,11 @@ public class ConversationService {
                 User sender = getUserFromEmail(email);
                 Conversation conversation = validateAndGetConversation(conversationId, sender);
 
+                if ((request.content() == null || request.content().trim().isEmpty())
+                                && (request.medias() == null || request.medias().isEmpty())) {
+                        throw new ApiException(ResponseCode.VALIDATION_ERROR);
+                }
+
                 Message message = new Message(conversation, sender, request.content(), MessageType.USER);
                 Message savedMessage = messageRepository.save(message);
 
@@ -315,6 +238,36 @@ public class ConversationService {
                 }
 
                 MessageDTO messageDTO = messageMapper.toDTO(savedMessage);
+
+                WsMessageResponse wsMessageResponse = new WsMessageResponse(
+                                messageDTO,
+                                mediaDTOs);
+                WsResponse<WsMessageResponse> wsResponse = WsResponse.success(wsMessageResponse);
+
+                if (conversation.getType() == ConversationType.GROUP) {
+                        messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getId(), wsResponse);
+                } else {
+                        User recipient = conversationMemberRepository.findByConversation(conversation).stream()
+                                        .filter(m -> !m.getMember().getId().equals(sender.getId()))
+                                        .findFirst()
+                                        .map(ConversationMember::getMember)
+                                        .orElseThrow(() -> new ApiException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        UserAuth recipientAuth = userAuthRepository.findByUserId(recipient.getId()).stream()
+                                        .findFirst()
+                                        .orElseThrow(() -> new ApiException(ResponseCode.RECIPIENT_NOT_FOUND));
+
+                        messagingTemplate.convertAndSendToUser(
+                                        recipientAuth.getEmail(),
+                                        "/queue/messages",
+                                        wsResponse);
+
+                        // Send ack to sender
+                        messagingTemplate.convertAndSendToUser(
+                                        email,
+                                        "/queue/messages",
+                                        wsResponse);
+                }
 
                 return new SendMessageWithMediaResponse(
                                 messageDTO,
@@ -354,6 +307,126 @@ public class ConversationService {
                                 members.stream().map(conversationMemberMapper::toDTO).toList());
         }
 
+        @Transactional
+        public GetConversationResponse addMembers(UUID conversationId, AddMemberRequest request, String email) {
+                User actor = getUserFromEmail(email);
+                Conversation conversation = validateAndGetConversation(conversationId, actor);
+
+                if (conversation.getType() != ConversationType.GROUP) {
+                        throw new ApiException(ResponseCode.INVALID_CONVERSATION_TYPE);
+                }
+
+                List<User> usersToAdd = userRepository.findAllById(request.userIds());
+                List<ConversationMember> currMembers = conversationMemberRepository.findByConversation(conversation);
+                List<ConversationMember> newMembers = new ArrayList<>();
+
+                for (User user : usersToAdd) {
+                        boolean exists = currMembers.stream().anyMatch(m -> m.getMember().getId().equals(user.getId()));
+                        if (!exists) {
+                                newMembers.add(new ConversationMember(conversation, user, MemberType.MEMBER));
+                                createSystemMessage(conversation, actor,
+                                                actor.getFullName() + " added " + user.getFullName() + " to the group");
+                        }
+                }
+
+                if (!newMembers.isEmpty()) {
+                        conversationMemberRepository.saveAll(newMembers);
+                }
+
+                return convertToGetConversationResponse(conversation);
+        }
+
+        @Transactional
+        public GetConversationResponse removeMember(UUID conversationId, UUID memberId, String email) {
+                User actor = getUserFromEmail(email);
+                Conversation conversation = validateAndGetConversation(conversationId, actor);
+
+                if (conversation.getType() != ConversationType.GROUP) {
+                        throw new ApiException(ResponseCode.INVALID_CONVERSATION_TYPE);
+                }
+
+                ConversationMember memberToRemove = conversationMemberRepository
+                                .findByConversationAndMemberId(conversation, memberId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.MEMBER_NOT_FOUND));
+
+                ConversationMember actorMember = conversationMemberRepository
+                                .findByConversationAndMemberId(conversation, actor.getId())
+                                .orElseThrow(() -> new ApiException(ResponseCode.MEMBER_NOT_FOUND));
+
+                if (!actorMember.getMember().getId().equals(memberToRemove.getMember().getId())
+                                && actorMember.getRole() != MemberType.ADMIN) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                if (memberToRemove.getRole() == MemberType.ADMIN
+                                && conversationMemberRepository.findByConversation(conversation).size() > 1) {
+                        long adminCount = conversationMemberRepository.findByConversation(conversation).stream()
+                                        .filter(m -> m.getRole() == MemberType.ADMIN).count();
+                        if (adminCount == 1) {
+                                throw new ApiException(ResponseCode.LAST_ADMIN_CANNOT_LEAVE);
+                        }
+                }
+
+                conversationMemberRepository.delete(memberToRemove);
+
+                String messageContent = actorMember.getMember().getId().equals(memberToRemove.getMember().getId())
+                                ? actor.getFullName() + " left the group"
+                                : actor.getFullName() + " removed " + memberToRemove.getMember().getFullName()
+                                                + " from the group";
+
+                createSystemMessage(conversation, actor, messageContent);
+
+                if (conversationMemberRepository.findByConversation(conversation).isEmpty()) {
+                        deleteConversationLogic(conversation);
+                        return null;
+                }
+
+                return convertToGetConversationResponse(conversation);
+        }
+
+        @Transactional
+        public GetConversationResponse updateConversation(UUID conversationId, UpdateConversationRequest request,
+                        String email) {
+                User actor = getUserFromEmail(email);
+                Conversation conversation = validateAndGetConversation(conversationId, actor);
+
+                if (conversation.getType() != ConversationType.GROUP) {
+                        throw new ApiException(ResponseCode.INVALID_CONVERSATION_TYPE);
+                }
+
+                if (request.name() != null && !request.name().isEmpty()
+                                && !request.name().equals(conversation.getTitle())) {
+                        conversation.setTitle(request.name());
+                        conversationRepository.save(conversation);
+                        createSystemMessage(conversation, actor,
+                                        actor.getFullName() + " changed the group name to " + request.name());
+                }
+
+                if (request.image() != null) {
+                        Media media = new Media(
+                                        conversation.getId(),
+                                        MediaTargetType.CONVERSATION,
+                                        request.image().type(),
+                                        request.image().objectKey(),
+                                        0);
+                        mediaRepository.save(media);
+                        createSystemMessage(conversation, actor, actor.getFullName() + " changed the group photo");
+                }
+
+                return convertToGetConversationResponse(conversation);
+        }
+
+        private void createSystemMessage(Conversation conversation, User actor, String content) {
+                Message message = new Message(conversation, actor, content, MessageType.SYSTEM);
+                message = messageRepository.save(message);
+
+                MessageDTO messageDTO = messageMapper.toDTO(message);
+                WsMessageResponse wsMessageResponse = new WsMessageResponse(messageDTO, Collections.emptyList());
+                WsResponse<WsMessageResponse> wsResponse = WsResponse.success(wsMessageResponse);
+
+                messagingTemplate.convertAndSend("/topic/conversations/" + conversation.getId(), wsResponse);
+        }
+
         private User getUserFromEmail(String email) {
                 UserAuth userAuth = userAuthRepository.findByEmail(email)
                                 .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
@@ -382,14 +455,105 @@ public class ConversationService {
                                 .map(conversationMemberMapper::toDTO)
                                 .toList();
 
-                var lastMessageDTO = messageRepository
-                                .findFirstByConversationOrderByCreatedAtDesc(conversation)
-                                .map(messageMapper::toDTO)
+                MessageDTO lastMessageDTO = null;
+                List<MediaDTO> lastMessageMedias = new ArrayList<>();
+
+                var lastMessageOpt = messageRepository.findFirstByConversationOrderByCreatedAtDesc(conversation);
+                if (lastMessageOpt.isPresent()) {
+                        Message lastMessage = lastMessageOpt.get();
+                        lastMessageDTO = messageMapper.toDTO(lastMessage);
+                        lastMessageMedias = mediaRepository
+                                        .findByTargetIdAndTargetType(lastMessage.getId(), MediaTargetType.MESSAGE)
+                                        .stream()
+                                        .map(mediaMapper::toDTO)
+                                        .toList();
+
+                        if ((lastMessageDTO.content() == null || lastMessageDTO.content().isEmpty())
+                                        && !lastMessageMedias.isEmpty()) {
+                                String content = lastMessage.getSender().getFullName() + " sent "
+                                                + lastMessageMedias.size() + " photos";
+                                lastMessageDTO = new MessageDTO(
+                                                lastMessageDTO.id(),
+                                                content,
+                                                lastMessageDTO.type(),
+                                                lastMessageDTO.sender(),
+                                                lastMessageDTO.conversation(),
+                                                lastMessageDTO.createdAt(),
+                                                lastMessageDTO.updatedAt());
+                        }
+                }
+
+                MediaDTO conversationImage = mediaRepository
+                                .findByTargetIdAndTargetType(conversation.getId(), MediaTargetType.CONVERSATION)
+                                .stream()
+                                .findFirst()
+                                .map(mediaMapper::toDTO)
                                 .orElse(null);
 
                 return new GetConversationResponse(
                                 conversationMapper.toDTO(conversation),
                                 memberDTOs,
-                                lastMessageDTO);
+                                lastMessageDTO,
+                                lastMessageMedias,
+                                conversationImage);
+        }
+
+        @Transactional
+        public void promoteMemberToAdmin(UUID conversationId, UUID memberId, String email) {
+                User actor = getUserFromEmail(email);
+                Conversation conversation = validateAndGetConversation(conversationId, actor);
+
+                if (conversation.getType() != ConversationType.GROUP) {
+                        throw new ApiException(ResponseCode.INVALID_CONVERSATION_TYPE);
+                }
+
+                ConversationMember actorMember = conversationMemberRepository
+                                .findByConversationAndMemberId(conversation, actor.getId())
+                                .orElseThrow(() -> new ApiException(ResponseCode.MEMBER_NOT_FOUND));
+
+                if (actorMember.getRole() != MemberType.ADMIN) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                ConversationMember memberToPromote = conversationMemberRepository
+                                .findByConversationAndMemberId(conversation, memberId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.MEMBER_NOT_FOUND));
+
+                if (memberToPromote.getRole() == MemberType.ADMIN) {
+                        return;
+                }
+
+                memberToPromote.setRole(MemberType.ADMIN);
+                conversationMemberRepository.save(memberToPromote);
+
+                createSystemMessage(conversation, actor,
+                                actor.getFullName() + " promoted " + memberToPromote.getMember().getFullName()
+                                                + " to admin");
+        }
+
+        @Transactional
+        public void deleteConversation(UUID conversationId, String email) {
+                User actor = getUserFromEmail(email);
+                Conversation conversation = validateAndGetConversation(conversationId, actor);
+
+                if (conversation.getType() == ConversationType.PRIVATE) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                ConversationMember actorMember = conversationMemberRepository
+                                .findByConversationAndMemberId(conversation, actor.getId())
+                                .orElseThrow(() -> new ApiException(ResponseCode.MEMBER_NOT_FOUND));
+
+                if (actorMember.getRole() != MemberType.ADMIN) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                deleteConversationLogic(conversation);
+        }
+
+        private void deleteConversationLogic(Conversation conversation) {
+                messageRepository.deleteByConversation(conversation);
+                conversationMemberRepository.deleteByConversation(conversation);
+                conversationRepository.delete(conversation);
         }
 }

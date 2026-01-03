@@ -44,4 +44,10 @@ public class PostTargetStrategy implements TargetStrategy {
         post.setLikesCount(post.getLikesCount() - 1);
         postRepository.save(post);
     }
+
+    @Override
+    public User getOwner(UUID targetId) {
+        Post post = postRepository.findById(targetId).orElseThrow(() -> new ApiException(ResponseCode.POST_NOT_FOUND));
+        return post.getUser();
+    }
 }

@@ -6,11 +6,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record MessageDTO(
-        UUID id,
-        String content,
-        MessageType type,
-        UserDTO sender,
-        Instant createdAt,
-        Instant updatedAt
-) {
+                UUID id,
+                String content,
+                MessageType type,
+                UserDTO sender,
+                ConversationDTO conversation,
+                Instant createdAt,
+                Instant updatedAt) {
 }

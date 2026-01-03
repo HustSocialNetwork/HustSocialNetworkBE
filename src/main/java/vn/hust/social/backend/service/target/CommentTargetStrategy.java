@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class CommentTargetStrategy implements TargetStrategy{
+public class CommentTargetStrategy implements TargetStrategy {
     private final CommentRepository commentRepository;
     private final CommentService commentService;
 
@@ -25,7 +25,8 @@ public class CommentTargetStrategy implements TargetStrategy{
 
     @Override
     public void validateView(User user, UUID targetId) {
-        Comment comment = commentRepository.findById(targetId).orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
+        Comment comment = commentRepository.findById(targetId)
+                .orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
         if (!commentService.canViewComment(user.getId(), comment)) {
             throw new ApiException(ResponseCode.CANNOT_VIEW_COMMENT);
         }
@@ -33,15 +34,24 @@ public class CommentTargetStrategy implements TargetStrategy{
 
     @Override
     public void increaseLike(UUID targetId) {
-        Comment comment = commentRepository.findById(targetId).orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
+        Comment comment = commentRepository.findById(targetId)
+                .orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
         comment.setLikesCount(comment.getLikesCount() + 1);
         commentRepository.save(comment);
     }
 
     @Override
     public void decreaseLike(UUID targetId) {
-        Comment comment = commentRepository.findById(targetId).orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
+        Comment comment = commentRepository.findById(targetId)
+                .orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
         comment.setLikesCount(comment.getLikesCount() - 1);
         commentRepository.save(comment);
+    }
+
+    @Override
+    public User getOwner(UUID targetId) {
+        Comment comment = commentRepository.findById(targetId)
+                .orElseThrow(() -> new ApiException(ResponseCode.COMMENT_NOT_FOUND));
+        return comment.getUser();
     }
 }

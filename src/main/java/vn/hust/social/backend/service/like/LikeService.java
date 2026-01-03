@@ -10,6 +10,8 @@ import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.repository.like.LikeRepository;
+import vn.hust.social.backend.entity.enums.notification.NotificationType;
+import vn.hust.social.backend.service.notification.NotificationService;
 import vn.hust.social.backend.service.target.TargetStrategy;
 import vn.hust.social.backend.service.target.TargetStrategyResolver;
 
@@ -22,6 +24,7 @@ public class LikeService {
     private final LikeRepository likeRepository;
     private final UserAuthRepository userAuthRepository;
     private final TargetStrategyResolver strategyResolver;
+    private final NotificationService notificationService;
 
     @Transactional
     public void like(UUID targetId, TargetType targetType, String email) {
@@ -39,6 +42,11 @@ public class LikeService {
         strategy.increaseLike(targetId);
 
         likeRepository.save(new Like(user, targetId, targetType));
+
+        User recipient = strategy.getOwner(targetId);
+        NotificationType notificationType = targetType == TargetType.POST ? NotificationType.LIKE_POST
+                : NotificationType.LIKE_COMMENT;
+        notificationService.sendNotification(recipient, user, notificationType, targetId);
     }
 
     @Transactional

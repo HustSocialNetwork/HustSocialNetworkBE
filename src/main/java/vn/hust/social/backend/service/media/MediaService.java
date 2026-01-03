@@ -76,7 +76,6 @@ public class MediaService {
 
     public DownloadMediasResponse getPresignedObjectUrlsForDownloading(List<DownloadMediaRequest> downloadMediaRequests,
             String bucketName, String email) {
-        // lấy vào 1 mảng gồm các objectKey ấy
         try {
             userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
             List<String> presignedUrlsForDownloading = new ArrayList<>();

@@ -60,4 +60,8 @@ public class User extends Base {
         this.backgroundKey = "/user-backgrounds/default.png";
         this.emailVerified = false;
     }
+
+    public String getFullName() {
+        return lastName + " " + firstName;
+    }
 }

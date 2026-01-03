@@ -13,11 +13,12 @@ import vn.hust.social.backend.service.chat.ConversationService;
 import vn.hust.social.backend.dto.chat.CreateConversationRequest;
 import vn.hust.social.backend.dto.chat.CreateConversationResponse;
 import vn.hust.social.backend.dto.chat.GetConversationResponse;
+import vn.hust.social.backend.dto.chat.AddMemberRequest;
+import vn.hust.social.backend.dto.chat.UpdateConversationRequest;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import vn.hust.social.backend.dto.chat.WsReadRequest;
-import vn.hust.social.backend.dto.chat.WsSendMessageRequest;
 import vn.hust.social.backend.dto.chat.WsTypingRequest;
 import java.security.Principal;
 
@@ -30,13 +31,6 @@ import java.util.UUID;
 public class ConversationController {
     private final JwtUtils jwtUtils;
     private final ConversationService conversationService;
-
-    @MessageMapping("/chat.sendMessage")
-    public void sendWsMessage(
-            @Payload WsSendMessageRequest request,
-            Principal principal) {
-        conversationService.sendWsMessage(request, principal);
-    }
 
     @MessageMapping("/chat.typing")
     public void broadcastTyping(
@@ -85,5 +79,51 @@ public class ConversationController {
             HttpServletRequest httpRequest) {
         String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
         return ApiResponse.success(conversationService.sendMessage(conversationId, request, email));
+    }
+
+    @PostMapping("/{conversationId}/members")
+    public ApiResponse<GetConversationResponse> addMembers(
+            @PathVariable UUID conversationId,
+            @RequestBody AddMemberRequest request,
+            HttpServletRequest httpRequest) {
+        String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
+        return ApiResponse.success(conversationService.addMembers(conversationId, request, email));
+    }
+
+    @DeleteMapping("/{conversationId}/members/{memberId}")
+    public ApiResponse<GetConversationResponse> removeMember(
+            @PathVariable UUID conversationId,
+            @PathVariable UUID memberId,
+            HttpServletRequest httpRequest) {
+        String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
+        return ApiResponse.success(conversationService.removeMember(conversationId, memberId, email));
+    }
+
+    @PutMapping("/{conversationId}")
+    public ApiResponse<GetConversationResponse> updateConversation(
+            @PathVariable UUID conversationId,
+            @RequestBody UpdateConversationRequest request,
+            HttpServletRequest httpRequest) {
+        String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
+        return ApiResponse.success(conversationService.updateConversation(conversationId, request, email));
+    }
+
+    @PutMapping("/{conversationId}/members/{memberId}/promote")
+    public ApiResponse<Void> promoteMemberToAdmin(
+            @PathVariable UUID conversationId,
+            @PathVariable UUID memberId,
+            HttpServletRequest httpRequest) {
+        String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
+        conversationService.promoteMemberToAdmin(conversationId, memberId, email);
+        return ApiResponse.success(null);
+    }
+
+    @DeleteMapping("/{conversationId}")
+    public ApiResponse<Void> deleteConversation(
+            @PathVariable UUID conversationId,
+            HttpServletRequest httpRequest) {
+        String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
+        conversationService.deleteConversation(conversationId, email);
+        return ApiResponse.success(null);
     }
 }

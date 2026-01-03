@@ -13,4 +13,6 @@ public interface TargetStrategy {
     void increaseLike(UUID targetId);
 
     void decreaseLike(UUID targetId);
+
+    User getOwner(UUID targetId);
 }

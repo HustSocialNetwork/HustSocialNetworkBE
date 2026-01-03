@@ -13,17 +13,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface MessageRepository extends JpaRepository<Message, UUID> {
-    Optional<Message> findFirstByConversationOrderByCreatedAtDesc(Conversation conversation);
+        Optional<Message> findFirstByConversationOrderByCreatedAtDesc(Conversation conversation);
 
-    @Query("SELECT m FROM Message m WHERE m.conversation = :conversation AND m.createdAt > :after ORDER BY m.createdAt DESC")
-    List<Message> findByConversationAfterTimestamp(@Param("conversation") Conversation conversation,
-            @Param("after") Instant after, Pageable pageable);
+        @Query("SELECT m FROM Message m WHERE m.conversation = :conversation AND m.createdAt > :after ORDER BY m.createdAt DESC")
+        List<Message> findByConversationAfterTimestamp(@Param("conversation") Conversation conversation,
+                        @Param("after") Instant after, Pageable pageable);
 
-    @Query("SELECT m FROM Message m WHERE m.conversation = :conversation AND m.createdAt < :before ORDER BY m.createdAt DESC")
-    List<Message> findByConversationBeforeTimestamp(@Param("conversation") Conversation conversation,
-            @Param("before") Instant before, Pageable pageable);
+        @Query("SELECT m FROM Message m WHERE m.conversation = :conversation AND m.createdAt < :before ORDER BY m.createdAt DESC")
+        List<Message> findByConversationBeforeTimestamp(@Param("conversation") Conversation conversation,
+                        @Param("before") Instant before, Pageable pageable);
 
-    @Query("SELECT m FROM Message m WHERE m.conversation = :conversation ORDER BY m.createdAt DESC")
-    List<Message> findByConversationOrderByCreatedAtDesc(@Param("conversation") Conversation conversation,
-            Pageable pageable);
+        @Query("SELECT m FROM Message m WHERE m.conversation = :conversation ORDER BY m.createdAt DESC")
+        List<Message> findByConversationOrderByCreatedAtDesc(@Param("conversation") Conversation conversation,
+                        Pageable pageable);
+
+        void deleteByConversation(Conversation conversation);
 }

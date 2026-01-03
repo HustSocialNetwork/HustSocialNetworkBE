@@ -28,6 +28,8 @@ import vn.hust.social.backend.repository.media.MediaRepository;
 import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
+import vn.hust.social.backend.service.notification.NotificationService;
+import vn.hust.social.backend.entity.enums.notification.NotificationType;
 import vn.hust.social.backend.service.post.PostPermissionService;
 
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ public class CommentService {
     private final BlockRepository blockRepository;
     private final CommentMapper commentMapper;
     private final MediaMapper mediaMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public GetCommentsResponse getComments(String postId, String email) {
@@ -131,6 +134,14 @@ public class CommentService {
                 .stream()
                 .map(mediaMapper::toDTO)
                 .toList();
+
+        if (parent == null) {
+            notificationService.sendNotification(post.getUser(), commenter, NotificationType.COMMENT_POST,
+                    post.getPostId());
+        } else {
+            notificationService.sendNotification(parent.getUser(), commenter, NotificationType.REPLY_COMMENT,
+                    parent.getId());
+        }
 
         return new CreateCommentResponse(commentMapper.toDTO(comment, medias));
     }

@@ -62,9 +62,17 @@ public enum ResponseCode {
 
     // ===== CONVERSATION =====
     CONVERSATION_NOT_FOUND(9001, "Conversation not found", HttpStatus.NOT_FOUND),
+    INVALID_CONVERSATION_TYPE(9005, "Invalid conversation type", HttpStatus.BAD_REQUEST),
+    CONVERSATION_ALREADY_EXISTS(9006, "Conversation already exists", HttpStatus.BAD_REQUEST),
+    MEMBER_NOT_FOUND(9007, "Member not found", HttpStatus.NOT_FOUND),
+    FORBIDDEN(9008, "You are not allowed to perform this action", HttpStatus.FORBIDDEN),
     CANNOT_ACCESS_MESSAGES(9002, "User is not allowed to access messages in this conversation", HttpStatus.FORBIDDEN),
     RECIPIENT_NOT_FOUND(9003, "Recipient not found", HttpStatus.NOT_FOUND),
     MESSAGE_NOT_FOUND(9004, "Message not found", HttpStatus.NOT_FOUND),
+    LAST_ADMIN_CANNOT_LEAVE(9009, "Last admin cannot leave the group", HttpStatus.BAD_REQUEST),
+
+    // ===== NOTIFICATION =====
+    NOTIFICATION_NOT_FOUND(10001, "Notification not found", HttpStatus.NOT_FOUND),
 
     // ===== STRATEGIES =====
     INVALID_TARGET(8001, "Invalid target", HttpStatus.BAD_REQUEST),
