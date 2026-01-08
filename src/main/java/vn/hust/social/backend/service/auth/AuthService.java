@@ -8,9 +8,11 @@ import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.auth.LocalRegisterResponse;
 import vn.hust.social.backend.dto.auth.LoginResponse;
 import vn.hust.social.backend.dto.UserDTO;
+import vn.hust.social.backend.entity.enums.user.UserRole;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.*;
+import vn.hust.social.backend.mapper.UserAuthMapper;
 import vn.hust.social.backend.mapper.UserMapper;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final UserMapper userMapper;
+    private final UserAuthMapper userAuthMapper;
 
     @Transactional
     public LocalRegisterResponse registerLocal(String firstName, String lastName, String displayName, String email,
@@ -42,7 +45,7 @@ public class AuthService {
         }
 
         String encodedPassword = passwordEncoder.encode(rawPassword);
-        User user = new User(firstName, lastName, displayName);
+        User user = new User(firstName, lastName, displayName, UserRole.USER);
         UserAuth userAuth = new UserAuth(user, UserAuth.AuthProvider.LOCAL, email, encodedPassword);
 
         userRepository.save(user);
@@ -59,7 +62,8 @@ public class AuthService {
             throw new ApiException(ResponseCode.EMAIL_ALREADY_REGISTERED);
         }
 
-        User user = new User(firstName, lastName, displayName);
+        UserRole role = email.endsWith(".edu.vn") ? UserRole.STUDENT : UserRole.USER;
+        User user = new User(firstName, lastName, displayName, role);
         UserAuth userAuth = new UserAuth(user, UserAuth.AuthProvider.M365, email, null);
 
         userRepository.save(user);
@@ -67,8 +71,10 @@ public class AuthService {
 
         UserDTO userDto = userMapper.toDTO(user);
 
-        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()),
-                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
+        return new LoginResponse("Bearer",
+                jwtUtils.generateAccessToken(userAuth.getEmail(), userAuth.getProvider().name(), user.getRole().name()),
+                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto,
+                userAuthMapper.toDTO(userAuth));
     }
 
     @Transactional
@@ -89,8 +95,10 @@ public class AuthService {
             throw new ApiException(ResponseCode.INVALID_PASSWORD);
         }
 
-        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()),
-                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
+        return new LoginResponse("Bearer",
+                jwtUtils.generateAccessToken(userAuth.getEmail(), userAuth.getProvider().name(), user.getRole().name()),
+                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto,
+                userAuthMapper.toDTO(userAuth));
     }
 
     @Transactional
@@ -101,8 +109,10 @@ public class AuthService {
         User user = userAuth.getUser();
         UserDTO userDto = userMapper.toDTO(user);
 
-        return new LoginResponse("Bearer", jwtUtils.generateAccessToken(userAuth.getEmail()),
-                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto);
+        return new LoginResponse("Bearer",
+                jwtUtils.generateAccessToken(userAuth.getEmail(), userAuth.getProvider().name(), user.getRole().name()),
+                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto,
+                userAuthMapper.toDTO(userAuth));
     }
 
     @Transactional

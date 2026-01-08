@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import vn.hust.social.backend.entity.Base;
+import vn.hust.social.backend.entity.enums.user.UserRole;
 
 import java.util.UUID;
 
@@ -48,14 +49,19 @@ public class User extends Base {
     @Column(name = "email_verified")
     private boolean emailVerified;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserRole role = UserRole.USER;
+
     protected User() {
         // Default JPA constructor
     }
 
-    public User(String firstName, String lastName, String displayName) {
+    public User(String firstName, String lastName, String displayName, UserRole role) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.displayName = displayName;
+        this.role = role;
         this.avatarKey = "/user-avatars/default.png";
         this.backgroundKey = "/user-backgrounds/default.png";
         this.emailVerified = false;

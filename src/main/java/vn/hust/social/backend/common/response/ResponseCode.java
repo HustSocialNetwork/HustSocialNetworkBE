@@ -24,6 +24,8 @@ public enum ResponseCode {
             HttpStatus.BAD_REQUEST),
 
     POST_VIEWER_NOT_FOUND(2008, "Post viewer not found", HttpStatus.NOT_FOUND),
+    UNAUTHORIZED(2009, "Unauthorized", HttpStatus.UNAUTHORIZED),
+    FORBIDDEN_ACCESS(2010, "Access denied", HttpStatus.FORBIDDEN),
 
     // ===== POST =====
     CANNOT_VIEW_POST(3001, "User is not allowed to view post", HttpStatus.BAD_REQUEST),
