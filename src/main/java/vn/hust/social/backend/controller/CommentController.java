@@ -22,25 +22,28 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping("/{postId}")
-    public ApiResponse<GetCommentsResponse> getComments (@PathVariable("postId") String postId, HttpServletRequest request) {
+    public ApiResponse<GetCommentsResponse> getComments(@PathVariable("postId") String postId,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(commentService.getComments(postId, email));
     }
 
     @PostMapping
-    public ApiResponse<CreateCommentResponse> createComment (@RequestBody CreateCommentRequest createCommentRequest, HttpServletRequest request) {
+    public ApiResponse<CreateCommentResponse> createComment(@RequestBody CreateCommentRequest createCommentRequest,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(commentService.createComment(createCommentRequest, email));
     }
 
     @PutMapping("/{commentId}")
-    public ApiResponse<UpdateCommentResponse> updateComment (@RequestBody UpdateCommentRequest updateCommentRequest, @PathVariable("commentId") String commentId, HttpServletRequest request) {
+    public ApiResponse<UpdateCommentResponse> updateComment(@RequestBody UpdateCommentRequest updateCommentRequest,
+            @PathVariable("commentId") String commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(commentService.updateComment(updateCommentRequest, commentId, email));
     }
 
     @DeleteMapping("/{commentId}")
-    public ApiResponse<Void> deleteComment (@PathVariable("commentId") String commentId, HttpServletRequest request) {
+    public ApiResponse<Void> deleteComment(@PathVariable("commentId") String commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         commentService.deleteComment(commentId, email);
         return ApiResponse.success(null);

@@ -1,5 +1,6 @@
 package vn.hust.social.backend.dto;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,5 +9,8 @@ public record CommentDTO(
                 UserDTO user,
                 String content,
                 int likesCount,
-                List<MediaDTO> medias) {
+                List<MediaDTO> medias,
+                boolean likedByViewer,
+                UUID parentId,
+                Instant createdAt) {
 }
