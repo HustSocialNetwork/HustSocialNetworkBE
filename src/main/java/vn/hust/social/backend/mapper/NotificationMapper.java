@@ -22,6 +22,10 @@ public interface NotificationMapper {
             case REPLY_COMMENT -> actorName + " replied to your comment.";
             case FRIEND_REQUEST -> actorName + " sent you a friend request.";
             case ACCEPT_FRIEND -> actorName + " accepted your friend request.";
+            case ASSIGN_CLUB_MODERATOR -> actorName + " assigned you as a moderator in the club.";
+            case NEW_EVENT -> actorName + " created a new event in the club.";
+            case EVENT_REGISTRATION_ACCEPTED -> actorName + " accepted your event registration.";
+            case EVENT_REGISTRATION_REJECTED -> actorName + " rejected your event registration.";
         };
     }
 }
