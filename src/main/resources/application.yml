@@ -53,7 +53,7 @@ app:
   base-url: http://localhost:8080
 
 minio:
-  endpoint: http://minio-api.muniversity.id.vn
+  endpoint: https://minio-api.muniversity.id.vn
   credentials:
     accessKey: bangdeptrai
     secretKey: jolibee1892004
