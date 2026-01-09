@@ -21,6 +21,11 @@ import vn.hust.social.backend.repository.friendship.FriendshipRepository;
 import vn.hust.social.backend.repository.user.UserRepository;
 import vn.hust.social.backend.service.notification.NotificationService;
 import vn.hust.social.backend.entity.enums.notification.NotificationType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import vn.hust.social.backend.dto.friendship.check.CheckFriendshipResponse;
+import vn.hust.social.backend.dto.friendship.get.GetFriendsResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -149,6 +154,42 @@ public class FriendshipService {
                                 .orElseThrow(() -> new ApiException(ResponseCode.FRIENDSHIP_NOT_FOUND));
 
                 return friendship.getStatus() == FriendshipStatus.ACCEPTED;
+        }
+
+        @Transactional
+        public GetFriendsResponse getFriends(String email, int page, int size) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+                Pageable pageable = PageRequest.of(page - 1, size);
+                Page<Friendship> friendships = friendshipRepository.findFriendshipsByUserIdAndStatus(user.getId(),
+                                FriendshipStatus.ACCEPTED, pageable);
+
+                List<FriendshipDTO> friendshipDTOs = friendships.stream()
+                                .map(friendshipMapper::toDTO)
+                                .toList();
+
+                return new GetFriendsResponse(friendshipDTOs);
+        }
+
+        @Transactional
+        public CheckFriendshipResponse checkFriendship(String email, String targetUserId) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                UUID sourceId = userAuth.getUser().getId();
+                UUID targetId = UUID.fromString(targetUserId);
+
+                Friendship friendship = friendshipRepository
+                                .findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(sourceId, targetId,
+                                                targetId, sourceId)
+                                .orElse(null);
+
+                if (friendship == null) {
+                        return new CheckFriendshipResponse(false, null);
+                }
+
+                boolean isFriend = friendship.getStatus() == FriendshipStatus.ACCEPTED;
+                return new CheckFriendshipResponse(isFriend, friendship.getStatus());
         }
 
 }
