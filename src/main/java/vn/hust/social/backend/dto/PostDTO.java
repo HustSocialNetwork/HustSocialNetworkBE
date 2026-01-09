@@ -16,6 +16,6 @@ public record PostDTO(
         int likesCount,
         int commentsCount,
         List<MediaDTO> medias,
-        Instant createdAt
-) {
+        Instant createdAt,
+        boolean likedByViewer) {
 }

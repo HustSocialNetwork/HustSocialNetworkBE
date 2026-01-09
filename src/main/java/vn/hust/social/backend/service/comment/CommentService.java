@@ -28,7 +28,9 @@ import vn.hust.social.backend.repository.media.MediaRepository;
 import vn.hust.social.backend.repository.comment.CommentRepository;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
+import vn.hust.social.backend.repository.like.LikeRepository;
 import vn.hust.social.backend.service.notification.NotificationService;
+import vn.hust.social.backend.entity.enums.like.TargetType;
 import vn.hust.social.backend.entity.enums.notification.NotificationType;
 import vn.hust.social.backend.service.post.PostPermissionService;
 
@@ -48,6 +50,7 @@ public class CommentService {
     private final CommentMapper commentMapper;
     private final MediaMapper mediaMapper;
     private final NotificationService notificationService;
+    private final LikeRepository likeRepository;
 
     @Transactional
     public GetCommentsResponse getComments(String postId, String email) {
@@ -70,7 +73,11 @@ public class CommentService {
                         .stream()
                         .map(mediaMapper::toDTO)
                         .toList();
-                CommentDTO commentDTO = commentMapper.toDTO(comment, medias);
+                boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                        userAuth.getUser().getId(),
+                        comment.getId(),
+                        TargetType.COMMENT);
+                CommentDTO commentDTO = commentMapper.toDTO(comment, medias, likedByViewer);
                 commentDTOs.add(commentDTO);
             }
         }
@@ -143,7 +150,7 @@ public class CommentService {
                     parent.getId());
         }
 
-        return new CreateCommentResponse(commentMapper.toDTO(comment, medias));
+        return new CreateCommentResponse(commentMapper.toDTO(comment, medias, false));
     }
 
     @Transactional
@@ -181,7 +188,11 @@ public class CommentService {
                     .stream()
                     .map(mediaMapper::toDTO)
                     .toList();
-            CommentDTO commentDTO = commentMapper.toDTO(savedComment, medias);
+            boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                    userAuth.getUser().getId(),
+                    savedComment.getId(),
+                    TargetType.COMMENT);
+            CommentDTO commentDTO = commentMapper.toDTO(savedComment, medias, likedByViewer);
 
             return new UpdateCommentResponse(commentDTO);
         } else

@@ -19,6 +19,7 @@ import vn.hust.social.backend.dto.post.get.GetPostsByUserIdResponse;
 import vn.hust.social.backend.dto.post.get.GetPostsOfFollowingResponse;
 import vn.hust.social.backend.dto.post.update.UpdatePostRequest;
 import vn.hust.social.backend.dto.post.update.UpdatePostResponse;
+import vn.hust.social.backend.entity.enums.like.TargetType;
 import vn.hust.social.backend.entity.enums.media.MediaOperation;
 import vn.hust.social.backend.entity.enums.media.MediaTargetType;
 import vn.hust.social.backend.entity.post.Post;
@@ -27,6 +28,11 @@ import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.repository.post.PostRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
+import vn.hust.social.backend.repository.like.LikeRepository;
+import vn.hust.social.backend.mapper.PostMapper;
+import vn.hust.social.backend.mapper.MediaMapper;
+import vn.hust.social.backend.repository.media.MediaRepository;
+import vn.hust.social.backend.dto.MediaDTO;
 
 import java.util.List;
 import java.util.UUID;
@@ -38,8 +44,21 @@ public class PostService {
         private final PostRepository postRepository;
         private final UserAuthRepository userAuthRepository;
         private final vn.hust.social.backend.service.media.MediaService mediaService;
-        private final PostDTOMapper postDTOMapper;
+        private final PostMapper postMapper;
+        private final MediaRepository mediaRepository;
+        private final MediaMapper mediaMapper;
         private final PostPermissionService postPermissionService;
+        private final LikeRepository likeRepository;
+
+        private PostDTO mapToPostDTO(Post post, boolean likedByViewer) {
+                List<MediaDTO> medias = mediaRepository
+                                .findByTargetIdAndTargetType(post.getPostId(), MediaTargetType.POST)
+                                .stream()
+                                .map(mediaMapper::toDTO)
+                                .toList();
+
+                return postMapper.toDTO(post, medias, likedByViewer);
+        }
 
         @Transactional
         public GetPostByPostIdResponse getPostByPostId(String postId, String email) {
@@ -52,7 +71,12 @@ public class PostService {
                 if (!postPermissionService.canViewPost(userAuth.getUser(), post))
                         throw new ApiException(ResponseCode.CANNOT_VIEW_POST);
 
-                return new GetPostByPostIdResponse(postDTOMapper.toDTO(post));
+                boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                                userAuth.getUser().getId(),
+                                post.getPostId(),
+                                TargetType.POST);
+
+                return new GetPostByPostIdResponse(mapToPostDTO(post, likedByViewer));
         }
 
         @Transactional
@@ -66,7 +90,13 @@ public class PostService {
                 Page<Post> posts = postRepository.findPostsByUser(ownerId, viewerId, pageable);
 
                 List<PostDTO> postDTOS = posts.getContent().stream()
-                                .map(postDTOMapper::toDTO)
+                                .map(post -> {
+                                        boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                                                        viewerId,
+                                                        post.getPostId(),
+                                                        TargetType.POST);
+                                        return mapToPostDTO(post, likedByViewer);
+                                })
                                 .toList();
 
                 return new GetPostsByUserIdResponse(postDTOS);
@@ -83,7 +113,13 @@ public class PostService {
                 Page<Post> posts = postRepository.findAllVisibleToViewer(viewerId, pageable);
 
                 List<PostDTO> postDTOS = posts.getContent().stream()
-                                .map(postDTOMapper::toDTO)
+                                .map(post -> {
+                                        boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                                                        viewerId,
+                                                        post.getPostId(),
+                                                        TargetType.POST);
+                                        return mapToPostDTO(post, likedByViewer);
+                                })
                                 .toList();
 
                 return new GetPostsByUserIdResponse(postDTOS);
@@ -98,7 +134,13 @@ public class PostService {
                 Page<Post> posts = postRepository.findPostsOfFriends(viewerId, pageable);
 
                 List<PostDTO> postDTOS = posts.getContent().stream()
-                                .map(postDTOMapper::toDTO)
+                                .map(post -> {
+                                        boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                                                        viewerId,
+                                                        post.getPostId(),
+                                                        TargetType.POST);
+                                        return mapToPostDTO(post, likedByViewer);
+                                })
                                 .toList();
 
                 return new GetPostsOfFollowingResponse(postDTOS);
@@ -121,7 +163,7 @@ public class PostService {
                                         postMedia.orderIndex());
                 }
 
-                return new CreatePostResponse(postDTOMapper.toDTO(post));
+                return new CreatePostResponse(mapToPostDTO(post, false));
         }
 
         @Transactional
@@ -155,7 +197,11 @@ public class PostService {
                         }
                         postRepository.saveAndFlush(post);
 
-                        return new UpdatePostResponse(postDTOMapper.toDTO(post));
+                        boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                                        userAuth.getUser().getId(),
+                                        post.getPostId(),
+                                        TargetType.POST);
+                        return new UpdatePostResponse(mapToPostDTO(post, likedByViewer));
                 } else
                         throw new ApiException(ResponseCode.CANNOT_UPDATE_POST);
         }
@@ -172,7 +218,11 @@ public class PostService {
                 String userID = post.getUser().getId().toString();
 
                 if (userID.equals(userId)) {
-                        PostDTO postDTO = postDTOMapper.toDTO(post);
+                        boolean likedByViewer = likeRepository.existsByUserIdAndTargetIdAndTargetType(
+                                        userAuth.getUser().getId(),
+                                        post.getPostId(),
+                                        TargetType.POST);
+                        PostDTO postDTO = mapToPostDTO(post, likedByViewer);
                         postRepository.delete(post);
                         return new DeletePostResponse(postDTO);
                 } else

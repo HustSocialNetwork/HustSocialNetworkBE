@@ -16,5 +16,9 @@ public interface CommentMapper {
     @Mapping(target = "id", source = "comment.id")
     @Mapping(target = "content", source = "comment.content")
     @Mapping(target = "likesCount", source = "comment.likesCount")
-    CommentDTO toDTO(Comment comment, List<MediaDTO> medias);
+    @Mapping(target = "likedByViewer", source = "likedByViewer")
+    @Mapping(target = "parentId", source = "comment.parent.id")
+    @Mapping(target = "createdAt", source = "comment.createdAt")
+    CommentDTO toDTO(Comment comment, List<MediaDTO> medias, boolean likedByViewer);
+
 }
