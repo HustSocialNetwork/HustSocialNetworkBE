@@ -21,9 +21,11 @@ public class JwtUtils {
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(String email, String provider, String role) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("provider", provider)
+                .claim("role", role)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
                 .signWith(SignatureAlgorithm.HS256, secret)
@@ -50,6 +52,18 @@ public class JwtUtils {
             throw new RuntimeException("Access token expired");
         } catch (SignatureException e) {
             throw new RuntimeException("Invalid JWT signature");
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid token");
+        }
+    }
+
+    public String extractRole(String token) {
+        try {
+            return Jwts.parser()
+                    .setSigningKey(secret)
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get("role", String.class);
         } catch (Exception e) {
             throw new RuntimeException("Invalid token");
         }

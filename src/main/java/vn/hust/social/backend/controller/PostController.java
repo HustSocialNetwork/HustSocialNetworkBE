@@ -1,53 +1,91 @@
 package vn.hust.social.backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import jakarta.validation.constraints.Max;
+import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import vn.hust.social.backend.dto.CreatePostRequest;
-import vn.hust.social.backend.dto.CreatePostResponse;
-import vn.hust.social.backend.dto.GetPostResponse;
-import vn.hust.social.backend.dto.UpdatePostRequest;
+import vn.hust.social.backend.common.response.ApiResponse;
+import vn.hust.social.backend.dto.post.create.CreatePostRequest;
+import vn.hust.social.backend.dto.post.create.CreatePostResponse;
+import vn.hust.social.backend.dto.post.get.GetPostByPostIdResponse;
+import vn.hust.social.backend.dto.post.get.GetPostsByUserIdResponse;
+import vn.hust.social.backend.dto.post.get.GetPostsOfFollowingResponse;
+import vn.hust.social.backend.dto.post.update.UpdatePostRequest;
+import vn.hust.social.backend.dto.post.update.UpdatePostResponse;
+import vn.hust.social.backend.dto.post.delete.DeletePostResponse;
 import vn.hust.social.backend.security.JwtHeaderUtils;
 import vn.hust.social.backend.security.JwtUtils;
-import vn.hust.social.backend.service.PostService;
+import vn.hust.social.backend.service.post.PostService;
 
 @RestController
 @RequestMapping("/api/posts")
+@RequiredArgsConstructor
 public class PostController {
-    @Autowired
-    private JwtUtils jwtUtils;
-
+    private final JwtUtils jwtUtils;
     private final PostService postService;
 
-    public PostController(PostService postService) {
-        this.postService = postService;
-    }
-
     @GetMapping("/{postId}")
-    public ResponseEntity<GetPostResponse> getPost(@PathVariable String postId, HttpServletRequest request) {
+    public ApiResponse<GetPostByPostIdResponse> getPostByPostId(@PathVariable String postId,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(postService.getPost(postId, email));
+        return ApiResponse.success(postService.getPostByPostId(postId, email));
     }
 
-    @PostMapping
-    public ResponseEntity<CreatePostResponse> createPost(@RequestBody CreatePostRequest createPostRequest, HttpServletRequest request) {
+    @Validated
+    @GetMapping()
+    public ApiResponse<GetPostsByUserIdResponse> getPostsByUserId(
+            @RequestParam String userId,
+            @RequestParam int page,
+            @RequestParam @Max(50) int pageSize,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(postService.createPost(createPostRequest, email));
+        return ApiResponse.success(postService.getPostsByUserId(userId, page, pageSize, email));
+    }
+
+    @Validated
+    @GetMapping("/friends")
+    public ApiResponse<GetPostsOfFollowingResponse> getPostsOfFriends(
+            @RequestParam int page,
+            @RequestParam @Max(50) int pageSize,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(postService.getPostsOfFriends(page, pageSize, email));
+    }
+
+    @Validated
+    @GetMapping("/all")
+    public ApiResponse<GetPostsByUserIdResponse> getAllPosts(
+            @RequestParam int page,
+            @RequestParam @Max(50) int pageSize,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(postService.getAllPosts(page, pageSize, email));
+    }
+
+    @PostMapping()
+    public ApiResponse<CreatePostResponse> createPost(
+            @RequestBody CreatePostRequest createPostRequest,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(postService.createPost(createPostRequest, email));
     }
 
     @PutMapping("/{postId}")
-    public ResponseEntity<?> updatePost(@PathVariable String postId, @RequestBody UpdatePostRequest updatePostRequest, HttpServletRequest request) {
+    public ApiResponse<UpdatePostResponse> updatePost(
+            @PathVariable String postId,
+            @RequestBody UpdatePostRequest updatePostRequest,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ResponseEntity.ok(postService.updatePost(postId, updatePostRequest, email));
+        return ApiResponse.success(postService.updatePost(postId, updatePostRequest, email));
     }
 
     @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable String postId, HttpServletRequest request) {
+    public ApiResponse<DeletePostResponse> deletePost(
+            @PathVariable String postId,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        postService.deletePost(postId, email);
-        return ResponseEntity.noContent().build();
+        DeletePostResponse response = postService.deletePost(postId, email);
+        return ApiResponse.success(response);
     }
 }

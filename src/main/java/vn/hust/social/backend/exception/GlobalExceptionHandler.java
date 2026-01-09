@@ -1,64 +1,37 @@
 package vn.hust.social.backend.exception;
 
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import vn.hust.social.backend.common.response.ApiResponse;
+import vn.hust.social.backend.common.response.ResponseCode;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(EmailAlreadyRegisteredException.class)
-    public ResponseEntity<?> handleEmailAlreadyRegistered(EmailAlreadyRegisteredException e) {
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
+        ResponseCode code = ex.getCode();
         return ResponseEntity
-                .badRequest()
-                .body(Map.of("success", false, "message", e.getMessage()));
+                .status(code.getHttpStatus())
+                .body(ApiResponse.error(code));
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<?> handleUserNotFound(UserNotFoundException e) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(Map.of("success", false, "message", e.getMessage()));
-    }
-
-    @ExceptionHandler(InvalidPasswordException.class)
-    public ResponseEntity<?> handleInvalidPassword(InvalidPasswordException e) {
-        return ResponseEntity
-                .badRequest()
-                .body(Map.of("success", false, "message", e.getMessage()));
-    }
-
-    // Thêm xử lý validation
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException e) {
-        Map<String, String> errors = e.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .collect(Collectors.toMap(
-                        fieldError -> fieldError.getField(),
-                        fieldError -> fieldError.getDefaultMessage()
-                ));
+    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
         return ResponseEntity
-                .badRequest()
-                .body(Map.of("success", false, "errors", errors));
-    }
-
-    @ExceptionHandler(DisplayNameAlreadyExistedException.class)
-    public ResponseEntity<?> handleDisplayNameAlreadyExisted(DisplayNameAlreadyExistedException e) {
-        return ResponseEntity
-                .badRequest()
-                .body(Map.of("success", false, "message", e.getMessage()));
+                .status(ResponseCode.VALIDATION_ERROR.getHttpStatus())
+                .body(ApiResponse.error(ResponseCode.VALIDATION_ERROR));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleOtherExceptions(Exception e) {
+    public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception e) {
+        log.error("Unexpected error", e); // optional
         return ResponseEntity
-                .internalServerError()
-                .body(Map.of("success", false, "message", e.getMessage()));
+                .status(ResponseCode.UNKNOWN_ERROR.getHttpStatus())
+                .body(ApiResponse.error(ResponseCode.UNKNOWN_ERROR));
     }
 }

@@ -11,9 +11,14 @@ spring:
     password: jolibee1892004
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -38,7 +43,7 @@ spring:
 
 jwt:
   secret: 6a915cc818ce759698ca2eaffcd841b2a19a72e3c00b421c38a6e0150c3cfd68
-  access-expiration: 900000
+  access-expiration: 86400000
   refresh-expiration: 604800000
 
 server:
@@ -48,7 +53,11 @@ app:
   base-url: http://localhost:8080
 
 minio:
-  endpoint: http://minio-api.muniversity.id.vn
+  endpoint: https://minio-api.muniversity.id.vn
   credentials:
     accessKey: bangdeptrai
     secretKey: jolibee1892004
+
+oauth:
+  client_id: 16daeb59-cec5-469e-886a-69f34976fb3b
+  client_secret: nek8Q~canGot9heeQY8HyW3MGEYtq37IMpaIkcTS
