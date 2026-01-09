@@ -13,6 +13,8 @@ import vn.hust.social.backend.dto.friendship.request.FriendRequestRequest;
 import vn.hust.social.backend.dto.friendship.request.FriendRequestResponse;
 import vn.hust.social.backend.dto.friendship.unfriend.FriendUnfriendRequest;
 import vn.hust.social.backend.dto.friendship.unfriend.FriendUnfriendResponse;
+import vn.hust.social.backend.dto.friendship.check.CheckFriendshipResponse;
+import vn.hust.social.backend.dto.friendship.get.GetFriendsResponse;
 import vn.hust.social.backend.security.JwtHeaderUtils;
 import vn.hust.social.backend.security.JwtUtils;
 import vn.hust.social.backend.service.friendship.FriendshipService;
@@ -25,7 +27,7 @@ public class FriendshipController {
     private final JwtUtils jwtUtils;
 
     @PostMapping("/request")
-    public ApiResponse<FriendRequestResponse> friendRequest (
+    public ApiResponse<FriendRequestResponse> friendRequest(
             @RequestBody FriendRequestRequest friendRequestRequest,
             HttpServletRequest request) {
         String requesterEmail = JwtHeaderUtils.extractEmail(request, jwtUtils);
@@ -33,33 +35,54 @@ public class FriendshipController {
     }
 
     @PostMapping("/accept")
-    public ApiResponse<FriendAcceptResponse> friendAccept (@RequestBody FriendAcceptRequest friendAcceptRequest, HttpServletRequest request) {
+    public ApiResponse<FriendAcceptResponse> friendAccept(@RequestBody FriendAcceptRequest friendAcceptRequest,
+            HttpServletRequest request) {
         String receiverEmail = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        return ApiResponse.success(friendshipService.friendAccept(friendAcceptRequest.friendRequestId(), receiverEmail));
+        return ApiResponse
+                .success(friendshipService.friendAccept(friendAcceptRequest.friendRequestId(), receiverEmail));
     }
 
     @PostMapping("/reject")
-    public ApiResponse<Void> friendReject (@RequestBody FriendRejectRequest friendRejectRequest, HttpServletRequest request) {
+    public ApiResponse<Void> friendReject(@RequestBody FriendRejectRequest friendRejectRequest,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         friendshipService.friendReject(friendRejectRequest.friendRequestId(), email);
         return ApiResponse.success(null);
     }
 
     @PostMapping("/unfriend")
-    public ApiResponse<FriendUnfriendResponse> friendUnfriend (@RequestBody FriendUnfriendRequest friendUnfriendRequest, HttpServletRequest request) {
+    public ApiResponse<FriendUnfriendResponse> friendUnfriend(@RequestBody FriendUnfriendRequest friendUnfriendRequest,
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(friendshipService.friendUnfriend(friendUnfriendRequest.friendId(), email));
     }
 
     @GetMapping("/requests/incoming")
-    public ApiResponse<FriendIncomingResponse> friendIncoming (HttpServletRequest request) {
+    public ApiResponse<FriendIncomingResponse> friendIncoming(HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(friendshipService.friendIncoming(email));
     }
 
     @GetMapping("/requests/outgoing")
-    public ApiResponse<FriendOutgoingResponse> friendOutgoing (HttpServletRequest request) {
+    public ApiResponse<FriendOutgoingResponse> friendOutgoing(HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(friendshipService.friendOutgoing(email));
+    }
+
+    @GetMapping("/list")
+    public ApiResponse<GetFriendsResponse> getFriends(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(friendshipService.getFriends(email, page, size));
+    }
+
+    @GetMapping("/check/{targetUserId}")
+    public ApiResponse<CheckFriendshipResponse> checkFriendship(
+            @PathVariable String targetUserId,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(friendshipService.checkFriendship(email, targetUserId));
     }
 }
