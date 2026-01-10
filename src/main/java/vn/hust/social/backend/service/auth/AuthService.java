@@ -2,6 +2,9 @@ package vn.hust.social.backend.service.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.hust.social.backend.common.response.ResponseCode;
@@ -15,8 +18,6 @@ import vn.hust.social.backend.exception.*;
 import vn.hust.social.backend.mapper.UserAuthMapper;
 import vn.hust.social.backend.mapper.UserMapper;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 import vn.hust.social.backend.repository.user.UserRepository;
 import vn.hust.social.backend.security.JwtUtils;
 
