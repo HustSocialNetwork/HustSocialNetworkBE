@@ -62,6 +62,9 @@ public enum ResponseCode {
     // ===== PROFILE =====
     SEARCH_PROFILE_KEYWORD_REQUIRED(7004, "Search profile keyword required", HttpStatus.BAD_REQUEST),
 
+    // ===== STRATEGIES =====
+    INVALID_TARGET(8001, "Invalid target", HttpStatus.BAD_REQUEST),
+
     // ===== CONVERSATION =====
     CONVERSATION_NOT_FOUND(9001, "Conversation not found", HttpStatus.NOT_FOUND),
     INVALID_CONVERSATION_TYPE(9005, "Invalid conversation type", HttpStatus.BAD_REQUEST),
@@ -76,8 +79,8 @@ public enum ResponseCode {
     // ===== NOTIFICATION =====
     NOTIFICATION_NOT_FOUND(10001, "Notification not found", HttpStatus.NOT_FOUND),
 
-    // ===== STRATEGIES =====
-    INVALID_TARGET(8001, "Invalid target", HttpStatus.BAD_REQUEST),
+    // ===== EVENT =====
+    EVENT_NOT_FOUND(11001, "Event not found", HttpStatus.NOT_FOUND),
 
     // ===== VALIDATION =====
     VALIDATION_ERROR(14001, "Validation error", HttpStatus.BAD_REQUEST),
