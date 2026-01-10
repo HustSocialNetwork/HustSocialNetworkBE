@@ -1,5 +1,8 @@
 package vn.hust.social.backend.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +24,13 @@ import vn.hust.social.backend.service.post.PostService;
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
+@Tag(name = "Post", description = "Post management APIs")
 public class PostController {
     private final JwtUtils jwtUtils;
     private final PostService postService;
 
     @GetMapping("/{postId}")
+    @Operation(summary = "Get post details", description = "Get detailed information of a post")
     public ApiResponse<GetPostByPostIdResponse> getPostByPostId(@PathVariable String postId,
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
@@ -34,6 +39,7 @@ public class PostController {
 
     @Validated
     @GetMapping()
+    @Operation(summary = "Get user posts", description = "Get list of posts created by a specific user")
     public ApiResponse<GetPostsByUserIdResponse> getPostsByUserId(
             @RequestParam String userId,
             @RequestParam int page,
@@ -45,6 +51,7 @@ public class PostController {
 
     @Validated
     @GetMapping("/friends")
+    @Operation(summary = "Get friends' posts", description = "Get feed of posts from friends")
     public ApiResponse<GetPostsOfFollowingResponse> getPostsOfFriends(
             @RequestParam int page,
             @RequestParam @Max(50) int pageSize,
@@ -55,6 +62,7 @@ public class PostController {
 
     @Validated
     @GetMapping("/all")
+    @Operation(summary = "Get all posts", description = "Get list of all posts (admin/feed)")
     public ApiResponse<GetPostsByUserIdResponse> getAllPosts(
             @RequestParam int page,
             @RequestParam @Max(50) int pageSize,
@@ -64,6 +72,7 @@ public class PostController {
     }
 
     @PostMapping()
+    @Operation(summary = "Create post", description = "Create a new post")
     public ApiResponse<CreatePostResponse> createPost(
             @RequestBody CreatePostRequest createPostRequest,
             HttpServletRequest request) {
@@ -72,6 +81,7 @@ public class PostController {
     }
 
     @PutMapping("/{postId}")
+    @Operation(summary = "Update post", description = "Update an existing post")
     public ApiResponse<UpdatePostResponse> updatePost(
             @PathVariable String postId,
             @RequestBody UpdatePostRequest updatePostRequest,
@@ -81,6 +91,7 @@ public class PostController {
     }
 
     @DeleteMapping("/{postId}")
+    @Operation(summary = "Delete post", description = "Delete a post")
     public ApiResponse<DeletePostResponse> deletePost(
             @PathVariable String postId,
             HttpServletRequest request) {

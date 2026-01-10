@@ -1,5 +1,8 @@
 package vn.hust.social.backend.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +31,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/conversations")
 @RequiredArgsConstructor
+@Tag(name = "Conversation", description = "Chat and Conversation APIs")
 public class ConversationController {
     private final JwtUtils jwtUtils;
     private final ConversationService conversationService;
@@ -47,6 +51,7 @@ public class ConversationController {
     }
 
     @PostMapping
+    @Operation(summary = "Create conversation", description = "Create a new conversation (group or single)")
     public ApiResponse<CreateConversationResponse> createConversation(
             @RequestBody CreateConversationRequest request,
             HttpServletRequest httpRequest) {
@@ -55,6 +60,7 @@ public class ConversationController {
     }
 
     @GetMapping
+    @Operation(summary = "Get user conversations", description = "Get list of conversations for the current user")
     public ApiResponse<List<GetConversationResponse>> getConversationsOfUser(
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
@@ -62,6 +68,7 @@ public class ConversationController {
     }
 
     @GetMapping("/{conversationId}/messages")
+    @Operation(summary = "Get messages", description = "Get messages in a conversation with pagination")
     public ApiResponse<List<GetMessagesResponse>> getMessages(
             @PathVariable UUID conversationId,
             @RequestParam(defaultValue = "50") int limit,
@@ -73,6 +80,7 @@ public class ConversationController {
     }
 
     @PostMapping("/{conversationId}/messages")
+    @Operation(summary = "Send message", description = "Send a message to a conversation")
     public ApiResponse<SendMessageWithMediaResponse> sendMessage(
             @PathVariable UUID conversationId,
             @RequestBody SendMessageRequest request,
@@ -82,6 +90,7 @@ public class ConversationController {
     }
 
     @PostMapping("/{conversationId}/members")
+    @Operation(summary = "Add members", description = "Add members to a conversation")
     public ApiResponse<GetConversationResponse> addMembers(
             @PathVariable UUID conversationId,
             @RequestBody AddMemberRequest request,
@@ -91,6 +100,7 @@ public class ConversationController {
     }
 
     @DeleteMapping("/{conversationId}/members/{memberId}")
+    @Operation(summary = "Remove member", description = "Remove a member from a conversation")
     public ApiResponse<GetConversationResponse> removeMember(
             @PathVariable UUID conversationId,
             @PathVariable UUID memberId,
@@ -100,6 +110,7 @@ public class ConversationController {
     }
 
     @PutMapping("/{conversationId}")
+    @Operation(summary = "Update conversation", description = "Update conversation details")
     public ApiResponse<GetConversationResponse> updateConversation(
             @PathVariable UUID conversationId,
             @RequestBody UpdateConversationRequest request,
@@ -109,6 +120,7 @@ public class ConversationController {
     }
 
     @PutMapping("/{conversationId}/members/{memberId}/promote")
+    @Operation(summary = "Promote member", description = "Promote a member to admin role in conversation")
     public ApiResponse<Void> promoteMemberToAdmin(
             @PathVariable UUID conversationId,
             @PathVariable UUID memberId,
@@ -119,6 +131,7 @@ public class ConversationController {
     }
 
     @DeleteMapping("/{conversationId}")
+    @Operation(summary = "Delete conversation", description = "Delete a conversation")
     public ApiResponse<Void> deleteConversation(
             @PathVariable UUID conversationId,
             HttpServletRequest httpRequest) {
