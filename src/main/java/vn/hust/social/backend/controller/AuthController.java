@@ -1,5 +1,8 @@
 package vn.hust.social.backend.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Authentication APIs")
 public class AuthController {
 
     private final AuthService authService;
@@ -23,6 +27,7 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register/local")
+    @Operation(summary = "Register (Local)", description = "Register a new user with email and password")
     public ApiResponse<LocalRegisterResponse> registerLocal(@RequestBody @Valid LocalRegisterRequest request) {
         LocalRegisterResponse response = authService.registerLocal(
                 request.getFirstName(),
@@ -35,11 +40,13 @@ public class AuthController {
     }
 
     @PostMapping("/login/local")
+    @Operation(summary = "Login (Local)", description = "Login with email and password")
     public ApiResponse<LoginResponse> loginLocal(@RequestBody LocalLoginRequest request) {
         return ApiResponse.success(authService.loginLocal(request.getEmail(), request.getPassword()));
     }
 
     @PostMapping("/login/oauth")
+    @Operation(summary = "Login (OAuth)", description = "Login with Microsoft OAuth access token")
     public ApiResponse<LoginResponse> loginOAuth(@RequestBody OAuthLoginRequest request) {
         Map<String, Object> meResponse = m365Service.getUserInfo(request.getAccessToken());
         LoginResponse response = authService.handleOAuthLogin(meResponse);
@@ -47,6 +54,7 @@ public class AuthController {
     }
 
     @GetMapping("/verify-email")
+    @Operation(summary = "Verify Email", description = "Verify email using token")
     public ApiResponse<String> verifyEmail(@RequestParam("token") String token) {
         boolean verified = emailVerificationService.verifyEmailToken(token);
         if (verified) {

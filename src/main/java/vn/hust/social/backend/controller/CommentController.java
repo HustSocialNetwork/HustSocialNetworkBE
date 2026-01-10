@@ -1,5 +1,8 @@
 package vn.hust.social.backend.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +20,13 @@ import vn.hust.social.backend.service.comment.CommentService;
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
+@Tag(name = "Comment", description = "Comment management APIs")
 public class CommentController {
     private final JwtUtils jwtUtils;
     private final CommentService commentService;
 
     @GetMapping("/{postId}")
+    @Operation(summary = "Get comments", description = "Get comments for a post")
     public ApiResponse<GetCommentsResponse> getComments(@PathVariable("postId") String postId,
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
@@ -29,6 +34,7 @@ public class CommentController {
     }
 
     @PostMapping
+    @Operation(summary = "Create comment", description = "Create a new comment on a post")
     public ApiResponse<CreateCommentResponse> createComment(@RequestBody CreateCommentRequest createCommentRequest,
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
@@ -36,6 +42,7 @@ public class CommentController {
     }
 
     @PutMapping("/{commentId}")
+    @Operation(summary = "Update comment", description = "Update an existing comment")
     public ApiResponse<UpdateCommentResponse> updateComment(@RequestBody UpdateCommentRequest updateCommentRequest,
             @PathVariable("commentId") String commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
@@ -43,6 +50,7 @@ public class CommentController {
     }
 
     @DeleteMapping("/{commentId}")
+    @Operation(summary = "Delete comment", description = "Delete a comment")
     public ApiResponse<Void> deleteComment(@PathVariable("commentId") String commentId, HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         commentService.deleteComment(commentId, email);

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.FriendshipDTO;
+import vn.hust.social.backend.dto.UserDTO;
 import vn.hust.social.backend.dto.friendship.accept.FriendAcceptResponse;
 import vn.hust.social.backend.dto.friendship.incoming.FriendIncomingResponse;
 import vn.hust.social.backend.dto.friendship.outgoing.FriendOutgoingResponse;
@@ -16,6 +17,7 @@ import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.FriendshipMapper;
+import vn.hust.social.backend.mapper.UserMapper;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.repository.friendship.FriendshipRepository;
 import vn.hust.social.backend.repository.user.UserRepository;
@@ -38,6 +40,7 @@ public class FriendshipService {
         private final UserRepository userRepository;
         private final FriendshipMapper friendshipMapper;
         private final NotificationService notificationService;
+        private final UserMapper userMapper;
 
         @Transactional
         public FriendRequestResponse friendRequest(
@@ -165,11 +168,16 @@ public class FriendshipService {
                 Page<Friendship> friendships = friendshipRepository.findFriendshipsByUserIdAndStatus(user.getId(),
                                 FriendshipStatus.ACCEPTED, pageable);
 
-                List<FriendshipDTO> friendshipDTOs = friendships.stream()
-                                .map(friendshipMapper::toDTO)
+                List<UserDTO> friends = friendships.stream()
+                                .map(friendship -> {
+                                        User friend = friendship.getRequester().getId().equals(user.getId())
+                                                        ? friendship.getReceiver()
+                                                        : friendship.getRequester();
+                                        return userMapper.toDTO(friend);
+                                })
                                 .toList();
 
-                return new GetFriendsResponse(friendshipDTOs);
+                return new GetFriendsResponse(friends);
         }
 
         @Transactional
