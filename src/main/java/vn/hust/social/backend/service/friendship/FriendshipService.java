@@ -53,7 +53,7 @@ public class FriendshipService {
                 User receiver = userRepository.findById(receiverId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
                 Friendship checkFriendship = friendshipRepository
-                                .findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(requesterId,
+                                .findFriendshipsByReceiverIdAndRequesterIdOrRequesterIdAndReceiverId(requesterId,
                                                 receiverId, receiverId,
                                                 requesterId)
                                 .orElse(null);
@@ -111,7 +111,7 @@ public class FriendshipService {
                 User user = userAuth.getUser();
                 UUID userId = user.getId();
                 Friendship friendship = friendshipRepository
-                                .findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(userId, friendId,
+                                .findFriendshipsByReceiverIdAndRequesterIdOrRequesterIdAndReceiverId(userId, friendId,
                                                 userId, friendId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.FRIENDSHIP_NOT_FOUND));
                 FriendshipDTO friendshipDTO = friendshipMapper.toDTO(friendship);
@@ -152,7 +152,7 @@ public class FriendshipService {
         @Transactional
         public boolean isFriend(UUID user1Id, UUID user2Id) {
                 Friendship friendship = friendshipRepository
-                                .findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(user1Id, user2Id,
+                                .findFriendshipsByReceiverIdAndRequesterIdOrRequesterIdAndReceiverId(user1Id, user2Id,
                                                 user2Id, user1Id)
                                 .orElseThrow(() -> new ApiException(ResponseCode.FRIENDSHIP_NOT_FOUND));
 
@@ -188,8 +188,8 @@ public class FriendshipService {
                 UUID targetId = UUID.fromString(targetUserId);
 
                 Friendship friendship = friendshipRepository
-                                .findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(sourceId, targetId,
-                                                targetId, sourceId)
+                                .findFriendshipsByReceiverIdAndRequesterIdOrRequesterIdAndReceiverId(sourceId, targetId, sourceId,
+                                                targetId)
                                 .orElse(null);
 
                 if (friendship == null) {
