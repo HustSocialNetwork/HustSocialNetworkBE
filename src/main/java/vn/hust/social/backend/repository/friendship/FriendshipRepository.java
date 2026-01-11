@@ -19,8 +19,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
 
     List<Friendship> findFriendshipsByRequesterAndStatus(User requester, FriendshipStatus status);
 
-    Optional<Friendship> findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(UUID receiverId,
-            UUID receiverId1, UUID requesterId, UUID receiverId11);
+    Optional<Friendship> findFriendshipsByReceiverIdAndRequesterIdOrRequesterIdAndReceiverId(UUID receiverId, UUID requesterId, UUID requesterId1, UUID receiverId1);
 
     @Query("SELECT f FROM Friendship f WHERE (f.requester.id = :userId OR f.receiver.id = :userId) AND f.status = :status")
     Page<Friendship> findFriendshipsByUserIdAndStatus(UUID userId, FriendshipStatus status, Pageable pageable);

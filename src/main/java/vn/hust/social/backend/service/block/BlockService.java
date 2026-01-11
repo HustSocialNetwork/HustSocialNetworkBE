@@ -32,9 +32,11 @@ public class BlockService {
 
     @Transactional
     public UserBlockResponse userBlock(UUID blockedUserId, String blockerEmail) {
-        UserAuth blockerUserAuth = userAuthRepository.findByEmail(blockerEmail).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth blockerUserAuth = userAuthRepository.findByEmail(blockerEmail)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User blocker = blockerUserAuth.getUser();
-        User blockedUser = userRepository.getUserById(blockedUserId).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        User blockedUser = userRepository.getUserById(blockedUserId)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         UUID blockerId = blocker.getId();
         blockRepository.findBlockByBlockerIdAndBlockedId(blockerId, blockedUserId)
                 .ifPresent(b -> {
@@ -47,15 +49,18 @@ public class BlockService {
         Block block = new Block(blocker, blockedUser);
         blockRepository.save(block);
         BlockDTO blockDTO = blockMapper.toDTO(block);
-        friendshipRepository.findFriendshipsByReceiverIdAndReceiverIdOrRequesterIdAndReceiverId(blockerId, blockedUserId, blockedUserId, blockerId).ifPresent(friendshipRepository::delete);
+        friendshipRepository.findFriendshipsByReceiverIdAndRequesterIdOrRequesterIdAndReceiverId(blockerId,
+                blockedUserId, blockedUserId, blockerId).ifPresent(friendshipRepository::delete);
         return new UserBlockResponse(blockDTO);
     }
 
     @Transactional
     public UserUnblockResponse userUnblock(UUID blockedUserId, String blockerEmail) {
-        UserAuth blockerUserAuth = userAuthRepository.findByEmail(blockerEmail).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth blockerUserAuth = userAuthRepository.findByEmail(blockerEmail)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         UUID blockerId = blockerUserAuth.getUser().getId();
-        Block block = blockRepository.findBlockByBlockerIdAndBlockedId(blockerId, blockedUserId).orElseThrow(() -> new ApiException(ResponseCode.BLOCK_NOT_FOUND));
+        Block block = blockRepository.findBlockByBlockerIdAndBlockedId(blockerId, blockedUserId)
+                .orElseThrow(() -> new ApiException(ResponseCode.BLOCK_NOT_FOUND));
         BlockDTO blockDTO = blockMapper.toDTO(block);
         blockRepository.delete(block);
         return new UserUnblockResponse(blockDTO);
@@ -63,7 +68,8 @@ public class BlockService {
 
     @Transactional
     public UserGetBlocksResponse userGetBlocks(String blockerEmail) {
-        UserAuth blockerUserAuth = userAuthRepository.findByEmail(blockerEmail).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth blockerUserAuth = userAuthRepository.findByEmail(blockerEmail)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         List<Block> blocks = blockRepository.findBlocksByBlockerId(blockerUserAuth.getUser().getId());
         List<BlockDTO> blockList = blocks.stream()
                 .map(blockMapper::toDTO)
