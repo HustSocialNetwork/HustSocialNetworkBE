@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.block.block.UserBlockRequest;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @RequestMapping("/api/blocks")
 @RequiredArgsConstructor
 @Tag(name = "Block", description = "User Blocking APIs")
+@PreAuthorize("hasRole('USER')")
 public class BlockController {
     private final JwtUtils jwtUtils;
     private final BlockService blockService;

@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.chat.GetMessagesResponse;
@@ -32,6 +33,7 @@ import java.util.UUID;
 @RequestMapping("/api/conversations")
 @RequiredArgsConstructor
 @Tag(name = "Conversation", description = "Chat and Conversation APIs")
+@PreAuthorize("hasRole('USER')")
 public class ConversationController {
     private final JwtUtils jwtUtils;
     private final ConversationService conversationService;

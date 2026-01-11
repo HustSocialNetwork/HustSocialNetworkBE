@@ -4,17 +4,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.EventDTO;
 import vn.hust.social.backend.dto.event.get.GetEventsResponse;
-import vn.hust.social.backend.service.EventService;
 import jakarta.validation.constraints.Max;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.servlet.http.HttpServletRequest;
 import vn.hust.social.backend.security.JwtHeaderUtils;
 import vn.hust.social.backend.security.JwtUtils;
+import vn.hust.social.backend.service.event.EventService;
 
 import java.util.UUID;
 
@@ -22,6 +23,7 @@ import java.util.UUID;
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
 @Tag(name = "Event", description = "Event management APIs")
+@PreAuthorize("hasRole('STUDENT')")
 public class EventController {
     private final EventService eventService;
     private final JwtUtils jwtUtils;

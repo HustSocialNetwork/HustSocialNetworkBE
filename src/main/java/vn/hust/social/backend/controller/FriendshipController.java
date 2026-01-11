@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.friendship.accept.FriendAcceptRequest;
@@ -26,6 +27,7 @@ import vn.hust.social.backend.service.friendship.FriendshipService;
 @RequestMapping("/api/friend")
 @RequiredArgsConstructor
 @Tag(name = "Friendship", description = "Friendship management APIs")
+@PreAuthorize("hasRole('USER')")
 public class FriendshipController {
     private final FriendshipService friendshipService;
     private final JwtUtils jwtUtils;

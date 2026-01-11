@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.notification.GetNotificationsResponse;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @Tag(name = "Notification", description = "Notification management APIs")
+@PreAuthorize("hasRole('USER')")
 public class NotificationController {
 
     private final NotificationService notificationService;

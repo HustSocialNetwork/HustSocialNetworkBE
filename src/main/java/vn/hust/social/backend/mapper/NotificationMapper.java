@@ -26,6 +26,11 @@ public interface NotificationMapper {
             case NEW_EVENT -> actorName + " created a new event in the club.";
             case EVENT_REGISTRATION_ACCEPTED -> actorName + " accepted your event registration.";
             case EVENT_REGISTRATION_REJECTED -> actorName + " rejected your event registration.";
+            case INVITE_CLUB_FOLLOW -> actorName + " invited you to follow the club.";
+            case INVITE_CLUB_MANAGE -> actorName + " invited you to manage the club.";
+            case APPLY_CLUB_MANAGE -> actorName + " applied to manage the club.";
+            case APPROVE_CLUB_APPLICATION -> actorName + " approved your club application.";
+            case REJECT_CLUB_APPLICATION -> actorName + " rejected your club application.";
         };
     }
 }
