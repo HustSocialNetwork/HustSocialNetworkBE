@@ -1,4 +1,4 @@
-package vn.hust.social.backend.service;
+package vn.hust.social.backend.service.event;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +18,9 @@ import vn.hust.social.backend.entity.event.EventParticipant;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.EventMapper;
-import vn.hust.social.backend.repository.EventRepository;
-import vn.hust.social.backend.repository.EventParticipantRepository;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
+import vn.hust.social.backend.repository.event.EventParticipantRepository;
+import vn.hust.social.backend.repository.event.EventRepository;
 
 import java.util.List;
 import java.util.Map;

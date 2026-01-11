@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.comment.create.CreateCommentRequest;
@@ -21,6 +22,7 @@ import vn.hust.social.backend.service.comment.CommentService;
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 @Tag(name = "Comment", description = "Comment management APIs")
+@PreAuthorize("hasRole('USER')")
 public class CommentController {
     private final JwtUtils jwtUtils;
     private final CommentService commentService;

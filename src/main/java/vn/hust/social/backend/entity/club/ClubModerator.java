@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import vn.hust.social.backend.entity.Base;
+import vn.hust.social.backend.entity.enums.club.ClubRole;
+import vn.hust.social.backend.entity.enums.club.ClubModeratorStatus;
 import vn.hust.social.backend.entity.user.User;
 
 import java.util.UUID;
@@ -28,11 +30,21 @@ public class ClubModerator extends Base {
     @JoinColumn(name = "user_id", nullable = false, columnDefinition = "BINARY(16)")
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(50)", nullable = false)
+    private ClubRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(50)", nullable = false)
+    private ClubModeratorStatus status;
+
     protected ClubModerator() {
     }
 
-    public ClubModerator(Club club, User user) {
+    public ClubModerator(Club club, User user, ClubRole role, ClubModeratorStatus status) {
         this.club = club;
         this.user = user;
+        this.role = role;
+        this.status = status;
     }
 }

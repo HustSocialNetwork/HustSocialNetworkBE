@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
@@ -25,6 +26,7 @@ import vn.hust.social.backend.service.post.PostService;
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
 @Tag(name = "Post", description = "Post management APIs")
+@PreAuthorize("hasRole('USER')")
 public class PostController {
     private final JwtUtils jwtUtils;
     private final PostService postService;

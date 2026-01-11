@@ -82,6 +82,18 @@ public enum ResponseCode {
     // ===== EVENT =====
     EVENT_NOT_FOUND(11001, "Event not found", HttpStatus.NOT_FOUND),
 
+    // ===== CLUB =====
+    CLUB_NOT_FOUND(12001, "Club not found", HttpStatus.NOT_FOUND),
+    CLUB_ALREADY_FOLLOWED(12002, "You have already followed this club", HttpStatus.BAD_REQUEST),
+    CLUB_NOT_FOLLOWED(12003, "You have not followed this club", HttpStatus.BAD_REQUEST),
+    CLUB_NAME_ALREADY_EXISTS(12004, "Club name already exists", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_MODERATOR(12005, "User is already a moderator", HttpStatus.BAD_REQUEST),
+    MODERATOR_NOT_FOUND(12006, "Moderator not found", HttpStatus.NOT_FOUND),
+    INVALID_APPLICATION_STATUS(12007, "Invalid application status", HttpStatus.BAD_REQUEST),
+    CLUB_ALREADY_FOLLOWED_BY_RECEIVER(12008, "The receiver has already followed this club", HttpStatus.BAD_REQUEST),
+    USER_HAS_ALREADY_APPLIED(12009, "User has already applied to manage this club", HttpStatus.BAD_REQUEST),
+    USER_HAS_ALREADY_BEEN_INVITED(12010, "User has already been invited to manage this club", HttpStatus.BAD_REQUEST),
+
     // ===== VALIDATION =====
     VALIDATION_ERROR(14001, "Validation error", HttpStatus.BAD_REQUEST),
 

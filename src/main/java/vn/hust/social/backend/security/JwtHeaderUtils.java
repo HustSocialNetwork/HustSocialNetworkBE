@@ -20,4 +20,3 @@ public class JwtHeaderUtils {
         return null;
     }
 }
-

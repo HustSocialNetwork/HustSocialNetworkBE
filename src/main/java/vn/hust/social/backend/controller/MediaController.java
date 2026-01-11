@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.media.download.DownloadMediasRequest;
@@ -21,6 +22,7 @@ import java.util.List;
 @RequestMapping("/api/media")
 @RequiredArgsConstructor
 @Tag(name = "Media", description = "Media Upload/Download APIs")
+@PreAuthorize("hasRole('USER')")
 public class MediaController {
     private final MediaService mediaService;
     private final JwtUtils jwtUtils;

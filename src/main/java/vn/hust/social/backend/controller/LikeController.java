@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.entity.enums.like.TargetType;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RequestMapping("/api/likes")
 @RequiredArgsConstructor
 @Tag(name = "Like", description = "Like/Unlike APIs")
+@PreAuthorize("hasRole('USER')")
 public class LikeController {
     private final JwtUtils jwtUtils;
     private final LikeService likeService;
