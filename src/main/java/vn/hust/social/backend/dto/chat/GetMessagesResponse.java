@@ -8,10 +8,12 @@ import java.util.List;
 import java.util.UUID;
 
 public record GetMessagesResponse(
-                UUID messageId,
-                UUID senderId,
-                String content,
-                MessageType type,
-                Instant createdAt,
-                List<MediaDTO> medias) {
+        UUID messageId,
+        UUID senderId,
+        String senderName,
+        String senderAvatar,
+        String content,
+        MessageType type,
+        Instant createdAt,
+        List<MediaDTO> medias) {
 }

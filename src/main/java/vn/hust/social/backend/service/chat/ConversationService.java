@@ -95,14 +95,25 @@ public class ConversationService {
                         messages = messageRepository.findByConversationOrderByCreatedAtDesc(conversation, pageable);
                 }
 
+                List<UUID> messageIds = messages.stream().map(Message::getId).toList();
+                List<Media> medias = mediaRepository.findByTargetIdInAndTargetType(messageIds, MediaTargetType.MESSAGE);
+
                 return messages.stream()
-                                .map(msg -> new GetMessagesResponse(
-                                                msg.getId(),
-                                                msg.getSender().getId(),
-                                                msg.getContent(),
-                                                msg.getType(),
-                                                msg.getCreatedAt(),
-                                                Collections.emptyList()))
+                                .map(msg -> {
+                                        List<MediaDTO> msgMedias = medias.stream()
+                                                        .filter(m -> m.getTargetId().equals(msg.getId()))
+                                                        .map(mediaMapper::toDTO)
+                                                        .toList();
+                                        return new GetMessagesResponse(
+                                                        msg.getId(),
+                                                        msg.getSender().getId(),
+                                                        msg.getSender().getDisplayName(),
+                                                        msg.getSender().getAvatarKey(),
+                                                        msg.getContent(),
+                                                        msg.getType(),
+                                                        msg.getCreatedAt(),
+                                                        msgMedias);
+                                })
                                 .toList();
         }
 
@@ -404,13 +415,8 @@ public class ConversationService {
                 }
 
                 if (request.image() != null) {
-                        Media media = new Media(
-                                        conversation.getId(),
-                                        MediaTargetType.CONVERSATION,
-                                        request.image().type(),
-                                        request.image().objectKey(),
-                                        0);
-                        mediaRepository.save(media);
+                        conversation.setAvatarKey(request.image().objectKey());
+                        conversationRepository.save(conversation);
                         createSystemMessage(conversation, actor, actor.getFullName() + " changed the group photo");
                 }
 
@@ -484,19 +490,10 @@ public class ConversationService {
                         }
                 }
 
-                MediaDTO conversationImage = mediaRepository
-                                .findByTargetIdAndTargetType(conversation.getId(), MediaTargetType.CONVERSATION)
-                                .stream()
-                                .findFirst()
-                                .map(mediaMapper::toDTO)
-                                .orElse(null);
-
                 return new GetConversationResponse(
                                 conversationMapper.toDTO(conversation),
                                 memberDTOs,
-                                lastMessageDTO,
-                                lastMessageMedias,
-                                conversationImage);
+                                lastMessageDTO);
         }
 
         @Transactional

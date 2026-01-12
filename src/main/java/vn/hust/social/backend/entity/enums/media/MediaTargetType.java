@@ -4,7 +4,6 @@ public enum MediaTargetType {
     POST,
     COMMENT,
     MESSAGE,
-    CONVERSATION,
     CLUB,
     EVENT
 }

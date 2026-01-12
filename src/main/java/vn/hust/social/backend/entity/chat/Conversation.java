@@ -10,10 +10,9 @@ import vn.hust.social.backend.entity.user.User;
 import java.util.UUID;
 
 @Entity
-@Table(name = "conversation",
-        indexes = {
-                        @Index(name = "idx_title", columnList = "title, type")
-        })
+@Table(name = "conversation", indexes = {
+        @Index(name = "idx_title", columnList = "title, type")
+})
 @Getter
 @Setter
 public class Conversation extends Base {
@@ -33,7 +32,11 @@ public class Conversation extends Base {
     @JoinColumn(name = "created_by", columnDefinition = "BINARY(16)", nullable = false)
     private User createdBy;
 
-    protected Conversation() {}
+    @Column(name = "avatar_key", length = 255)
+    private String avatarKey = "/conversation-avatars/default.png";
+
+    protected Conversation() {
+    }
 
     public Conversation(ConversationType type, String title, User createdBy) {
         this.type = type;
