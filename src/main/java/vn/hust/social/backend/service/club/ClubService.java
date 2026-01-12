@@ -32,6 +32,14 @@ import vn.hust.social.backend.dto.club.CreateClubResponse;
 import vn.hust.social.backend.dto.club.ApproveApplicationResponse;
 import vn.hust.social.backend.service.notification.NotificationService;
 import vn.hust.social.backend.entity.enums.notification.NotificationType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import vn.hust.social.backend.dto.ClubDTO;
+import vn.hust.social.backend.dto.club.GetFollowedClubsResponse;
+import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
+
 import java.util.Optional;
 import java.util.List;
 
@@ -278,5 +286,39 @@ public class ClubService {
                 notificationService.sendNotification(user, rejector, NotificationType.REJECT_CLUB_APPLICATION, clubId);
 
                 return new RejectApplicationResponse(clubMapper.toClubModeratorDTO(application));
+        }
+
+        @Transactional
+        public GetFollowedClubsResponse getFollowedClubs(String email, int page, int size) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+                Page<Club> followedClubs = clubRepository.findFollowedClubs(user.getId(), ClubFollowerStatus.ACTIVE,
+                                pageable);
+
+                List<ClubDTO> clubs = followedClubs.stream()
+                                .map(clubMapper::toClubDTO)
+                                .toList();
+
+                return new GetFollowedClubsResponse(clubs);
+        }
+
+        @Transactional
+        public GetManagedClubsResponse getManagedClubs(String email, int page, int size) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+                Page<Club> managedClubs = clubRepository.findManagedClubs(user.getId(), ClubModeratorStatus.ACTIVE,
+                                pageable);
+
+                List<ClubDTO> clubs = managedClubs.stream()
+                                .map(clubMapper::toClubDTO)
+                                .toList();
+
+                return new GetManagedClubsResponse(clubs);
         }
 }

@@ -21,6 +21,8 @@ import vn.hust.social.backend.dto.club.InviteManageRequest;
 import vn.hust.social.backend.dto.club.InviteManageResponse;
 import vn.hust.social.backend.dto.club.InviteRequest;
 import vn.hust.social.backend.dto.club.RejectApplicationResponse;
+import vn.hust.social.backend.dto.club.GetFollowedClubsResponse;
+import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
 
 import java.util.UUID;
 
@@ -119,5 +121,27 @@ public class ClubController {
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(clubService.rejectApplication(id, userId, email));
+    }
+
+    @GetMapping("/me/following")
+    @Operation(summary = "Get clubs followed by the current user")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<GetFollowedClubsResponse> getFollowedClubs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(clubService.getFollowedClubs(email, page, size));
+    }
+
+    @GetMapping("/me/managing")
+    @Operation(summary = "Get clubs managed by the current user")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<GetManagedClubsResponse> getManagedClubs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(clubService.getManagedClubs(email, page, size));
     }
 }

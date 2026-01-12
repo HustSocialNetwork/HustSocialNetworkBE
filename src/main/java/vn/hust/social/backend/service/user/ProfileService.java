@@ -27,7 +27,8 @@ public class ProfileService {
 
     @Transactional
     public GetMeProfileResponse getMeProfile(String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth userAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User user = userAuth.getUser();
         ProfileDTO profileDTO = userMapper.toProfileDTO(user);
 
@@ -36,10 +37,13 @@ public class ProfileService {
 
     @Transactional
     public GetUserProfileResponse getUserProfile(UUID userId, String email) {
-        UserAuth viewerUserAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth viewerUserAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
-        if (blockRepository.existsByBlockerIdAndBlockedId(userId, viewerUserAuth.getUser().getId())) throw new ApiException(ResponseCode.USER_ALREADY_BEEN_BLOCKED);
-        if (blockRepository.existsByBlockerIdAndBlockedId(viewerUserAuth.getUser().getId(), userId)) throw new ApiException(ResponseCode.USER_ALREADY_BLOCKED);
+        if (blockRepository.existsByBlockerIdAndBlockedId(userId, viewerUserAuth.getUser().getId()))
+            throw new ApiException(ResponseCode.USER_ALREADY_BEEN_BLOCKED);
+        if (blockRepository.existsByBlockerIdAndBlockedId(viewerUserAuth.getUser().getId(), userId))
+            throw new ApiException(ResponseCode.USER_ALREADY_BLOCKED);
         ProfileDTO profileDTO = userMapper.toProfileDTO(user);
 
         return new GetUserProfileResponse(profileDTO);
@@ -47,14 +51,21 @@ public class ProfileService {
 
     @Transactional
     public UpdateProfileResponse updateUserProfile(UpdateProfileRequest updateProfileRequest, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        UserAuth userAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         User user = userAuth.getUser();
-        if (!updateProfileRequest.firstName().isBlank()) user.setFirstName(updateProfileRequest.firstName());
-        if (!updateProfileRequest.lastName().isBlank()) user.setLastName(updateProfileRequest.lastName());
-        if (!updateProfileRequest.displayName().isBlank()) user.setDisplayName(updateProfileRequest.displayName());
-        if (!updateProfileRequest.avatarKey().isBlank()) user.setAvatarKey(updateProfileRequest.avatarKey());
-        if (!updateProfileRequest.backgroundKey().isBlank()) user.setBackgroundKey(updateProfileRequest.backgroundKey());
-        if (!updateProfileRequest.bio().isBlank()) user.setBio(updateProfileRequest.bio());
+        if (!updateProfileRequest.firstName().isBlank())
+            user.setFirstName(updateProfileRequest.firstName());
+        if (!updateProfileRequest.lastName().isBlank())
+            user.setLastName(updateProfileRequest.lastName());
+        if (!updateProfileRequest.displayName().isBlank() && !userRepository.existsByDisplayName(updateProfileRequest.displayName()))
+            user.setDisplayName(updateProfileRequest.displayName());
+        if (!updateProfileRequest.avatarKey().isBlank())
+            user.setAvatarKey(updateProfileRequest.avatarKey());
+        if (!updateProfileRequest.backgroundKey().isBlank())
+            user.setBackgroundKey(updateProfileRequest.backgroundKey());
+        if (!updateProfileRequest.bio().isBlank())
+            user.setBio(updateProfileRequest.bio());
         userRepository.save(user);
         ProfileDTO profileDTO = userMapper.toProfileDTO(user);
         return new UpdateProfileResponse(profileDTO);
@@ -62,8 +73,10 @@ public class ProfileService {
 
     @Transactional
     public SearchProfilesResponse searchProfiles(String keyword, String email) {
-        UserAuth userAuth = userAuthRepository.findByEmail(email).orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
-        if (keyword.isBlank()) throw new ApiException(ResponseCode.SEARCH_PROFILE_KEYWORD_REQUIRED);
+        UserAuth userAuth = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+        if (keyword.isBlank())
+            throw new ApiException(ResponseCode.SEARCH_PROFILE_KEYWORD_REQUIRED);
         List<User> users = userRepository.searchProfiles(keyword, userAuth.getUser().getId());
 
         return new SearchProfilesResponse(users.stream()
