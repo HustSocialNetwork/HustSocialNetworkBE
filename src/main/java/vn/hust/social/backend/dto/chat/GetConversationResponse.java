@@ -4,14 +4,10 @@ import vn.hust.social.backend.dto.ConversationDTO;
 import vn.hust.social.backend.dto.ConversationMemberDTO;
 import vn.hust.social.backend.dto.MessageDTO;
 
-import vn.hust.social.backend.dto.MediaDTO;
-
 import java.util.List;
 
 public record GetConversationResponse(
-        ConversationDTO conversation,
-        List<ConversationMemberDTO> participants,
-        MessageDTO lastMessage,
-        List<MediaDTO> lastMessageMedias,
-        MediaDTO conversationImage) {
+                ConversationDTO conversation,
+                List<ConversationMemberDTO> participants,
+                MessageDTO lastMessage) {
 }

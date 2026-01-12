@@ -10,7 +10,9 @@ import java.util.UUID;
 public interface MediaRepository extends JpaRepository<Media, UUID> {
     List<Media> findByTargetIdAndTargetType(UUID targetId, MediaTargetType targetType);
 
+    List<Media> findByTargetIdInAndTargetType(List<UUID> targetIds, MediaTargetType targetType);
+
     void deleteByMediaId(UUID mediaId);
-    
+
     void deleteByObjectKeyAndTargetType(String objectKey, MediaTargetType targetType);
 }
