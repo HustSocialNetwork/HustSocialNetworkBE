@@ -100,6 +100,7 @@ public class ConversationService {
                                                 msg.getId(),
                                                 msg.getSender().getId(),
                                                 msg.getContent(),
+                                                msg.getType(),
                                                 msg.getCreatedAt(),
                                                 Collections.emptyList()))
                                 .toList();
