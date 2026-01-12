@@ -11,6 +11,7 @@ import vn.hust.social.backend.entity.enums.club.ClubFollowerStatus;
 import vn.hust.social.backend.entity.enums.club.ClubModeratorStatus;
 
 import java.util.UUID;
+import java.util.List;
 
 @Repository
 public interface ClubRepository extends JpaRepository<Club, UUID> {
@@ -21,4 +22,7 @@ public interface ClubRepository extends JpaRepository<Club, UUID> {
 
     @Query("SELECT c FROM Club c JOIN ClubModerator cm ON c.id = cm.club.id WHERE cm.user.id = :userId AND cm.status = :status")
     Page<Club> findManagedClubs(UUID userId, ClubModeratorStatus status, Pageable pageable);
+
+    @Query(value = "SELECT * FROM club WHERE MATCH(name) AGAINST(:keyword IN BOOLEAN MODE) ORDER BY created_at DESC", countQuery = "SELECT COUNT(*) FROM club WHERE MATCH(name) AGAINST(:keyword IN BOOLEAN MODE)", nativeQuery = true)
+    Page<Club> searchByName(String keyword, Pageable pageable);
 }

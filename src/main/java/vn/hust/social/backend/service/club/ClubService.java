@@ -40,6 +40,9 @@ import vn.hust.social.backend.dto.ClubDTO;
 import vn.hust.social.backend.dto.club.GetFollowedClubsResponse;
 import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
 
+import vn.hust.social.backend.dto.ClubWithStatusDTO;
+import vn.hust.social.backend.dto.club.GetAllClubsResponse;
+import vn.hust.social.backend.dto.club.SearchClubsResponse;
 import java.util.Optional;
 import java.util.List;
 
@@ -320,5 +323,53 @@ public class ClubService {
                                 .toList();
 
                 return new GetManagedClubsResponse(clubs);
+        }
+
+        @Transactional(readOnly = true)
+        public GetAllClubsResponse getAllClubs(int page, int size, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+                Page<Club> clubsPage = clubRepository.findAll(pageable);
+
+                List<UUID> clubIds = clubsPage.getContent().stream().map(Club::getId).toList();
+                List<UUID> followedClubIds = clubFollowerRepository.findAllByUserIdAndClubIdInAndStatus(
+                                user.getId(), clubIds, ClubFollowerStatus.ACTIVE)
+                                .stream().map(cf -> cf.getClub().getId()).toList();
+
+                List<ClubWithStatusDTO> clubWithStatusDTOS = clubsPage.getContent().stream()
+                                .map(club -> new ClubWithStatusDTO(clubMapper.toClubDTO(club),
+                                                followedClubIds.contains(club.getId())))
+                                .toList();
+
+                return new GetAllClubsResponse(clubWithStatusDTOS);
+        }
+
+        @Transactional(readOnly = true)
+        public SearchClubsResponse searchClubs(String keyword, int page, int size, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                if (keyword == null || keyword.trim().isEmpty()) {
+                        return new SearchClubsResponse(List.of());
+                }
+
+                Pageable pageable = PageRequest.of(page - 1, size);
+                Page<Club> clubsPage = clubRepository.searchByName(keyword, pageable);
+
+                List<UUID> clubIds = clubsPage.getContent().stream().map(Club::getId).toList();
+                List<UUID> followedClubIds = clubFollowerRepository.findAllByUserIdAndClubIdInAndStatus(
+                                user.getId(), clubIds, ClubFollowerStatus.ACTIVE)
+                                .stream().map(cf -> cf.getClub().getId()).toList();
+
+                List<ClubWithStatusDTO> clubWithStatusDTOS = clubsPage.getContent().stream()
+                                .map(club -> new ClubWithStatusDTO(clubMapper.toClubDTO(club),
+                                                followedClubIds.contains(club.getId())))
+                                .toList();
+
+                return new SearchClubsResponse(clubWithStatusDTOS);
         }
 }

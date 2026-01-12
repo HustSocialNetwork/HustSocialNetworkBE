@@ -10,8 +10,12 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.UUID;
 
+import java.util.List;
+
 @Repository
 public interface ClubFollowerRepository extends JpaRepository<ClubFollower, UUID> {
+    List<ClubFollower> findAllByUserIdAndClubIdInAndStatus(UUID userId, List<UUID> clubIds, ClubFollowerStatus status);
+
     boolean existsByClubIdAndUserId(UUID clubId, UUID userId);
 
     Optional<ClubFollower> findByClubIdAndUserId(UUID clubId, UUID userId);
