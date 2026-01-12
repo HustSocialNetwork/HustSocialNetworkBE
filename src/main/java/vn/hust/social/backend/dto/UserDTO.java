@@ -1,5 +1,7 @@
 package vn.hust.social.backend.dto;
 
+import vn.hust.social.backend.entity.enums.user.UserRole;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -13,5 +15,6 @@ public record UserDTO(
         String backgroundKey,
         String bio,
         Integer friendsCount,
-        boolean emailVerified
+        boolean emailVerified,
+        UserRole role
 ) {}
