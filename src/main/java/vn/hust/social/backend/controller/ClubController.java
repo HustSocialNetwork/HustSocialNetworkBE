@@ -25,6 +25,9 @@ import vn.hust.social.backend.dto.club.GetFollowedClubsResponse;
 import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
 
 import java.util.UUID;
+import vn.hust.social.backend.dto.club.GetAllClubsResponse;
+import vn.hust.social.backend.dto.club.SearchClubsResponse;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/clubs")
@@ -143,5 +146,28 @@ public class ClubController {
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(clubService.getManagedClubs(email, page, size));
+    }
+
+    @GetMapping
+    @Operation(summary = "List all clubs")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<GetAllClubsResponse> getAllClubs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(clubService.getAllClubs(page, size, email));
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search clubs by name (fulltext)")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<SearchClubsResponse> searchClubs(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(clubService.searchClubs(name, page, size, email));
     }
 }
