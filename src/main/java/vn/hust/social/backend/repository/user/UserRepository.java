@@ -15,19 +15,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> getUserById(UUID id);
 
-    @Query("""
-            select u from User u
-            where (
-                lower(u.displayName) like lower(concat('%', :keyword, '%'))
-                or lower(u.firstName) like lower(concat('%', :keyword, '%'))
-                or lower(u.lastName) like lower(concat('%', :keyword, '%'))
+    @Query(value = """
+            SELECT * FROM users u
+            WHERE MATCH(u.display_name, u.first_name, u.last_name) AGAINST(:keyword IN BOOLEAN MODE)
+            AND u.id != :viewerId
+            AND NOT EXISTS (
+                SELECT 1 FROM block b
+                WHERE (b.blocker_id = :viewerId AND b.blocked_id = u.id)
+                   OR (b.blocker_id = u.id AND b.blocked_id = :viewerId)
             )
-            and u.id <> :viewerId
-            and not exists (
-                select 1 from Block b
-                where (b.blocker.id = :viewerId and b.blocked.id = u.id)
-                   or (b.blocker.id = u.id and b.blocked.id = :viewerId)
-            )
-            """)
+            """, nativeQuery = true)
     List<User> searchProfiles(String keyword, UUID viewerId);
 }

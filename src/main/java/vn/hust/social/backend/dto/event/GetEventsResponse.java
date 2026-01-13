@@ -1,4 +1,4 @@
-package vn.hust.social.backend.dto.event.get;
+package vn.hust.social.backend.dto.event;
 
 import vn.hust.social.backend.dto.EventDTO;
 import java.util.List;

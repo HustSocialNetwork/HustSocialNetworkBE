@@ -87,6 +87,7 @@ public enum ResponseCode {
     EVENT_REGISTRATION_NOT_FOUND(11005, "Event registration not found", HttpStatus.NOT_FOUND),
     EVENT_PARTICIPANT_ALREADY_APPROVED(11006, "Event participant already approved", HttpStatus.BAD_REQUEST),
     EVENT_PARTICIPANT_ALREADY_REJECTED(11007, "Event participant already rejected", HttpStatus.BAD_REQUEST),
+    INVALID_EVENT_TIME(11008, "Invalid event time", HttpStatus.BAD_REQUEST),
 
     // ===== CLUB =====
     CLUB_NOT_FOUND(12001, "Club not found", HttpStatus.NOT_FOUND),
@@ -99,6 +100,7 @@ public enum ResponseCode {
     CLUB_ALREADY_FOLLOWED_BY_RECEIVER(12008, "The receiver has already followed this club", HttpStatus.BAD_REQUEST),
     USER_HAS_ALREADY_APPLIED(12009, "User has already applied to manage this club", HttpStatus.BAD_REQUEST),
     USER_HAS_ALREADY_BEEN_INVITED(12010, "User has already been invited to manage this club", HttpStatus.BAD_REQUEST),
+    CANNOT_REMOVE_INACTIVE_MODERATOR(12011, "Cannot remove inactive moderator", HttpStatus.BAD_REQUEST),
 
     // ===== VALIDATION =====
     VALIDATION_ERROR(14001, "Validation error", HttpStatus.BAD_REQUEST),

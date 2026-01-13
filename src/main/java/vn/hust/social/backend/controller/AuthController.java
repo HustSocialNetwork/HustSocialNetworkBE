@@ -63,4 +63,10 @@ public class AuthController {
             throw new ApiException(ResponseCode.INVALID_OR_EXPIRED_EMAIL_VERIFICATION_TOKEN);
         }
     }
+
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh Token", description = "Get new access token using refresh token")
+    public ApiResponse<LoginResponse> refreshToken(@RequestBody @Valid RefreshTokenRequest request) {
+        return ApiResponse.success(authService.refreshToken(request.getRefreshToken()));
+    }
 }

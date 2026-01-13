@@ -14,6 +14,7 @@ import vn.hust.social.backend.dto.UserDTO;
 import vn.hust.social.backend.entity.enums.user.UserRole;
 import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
+import vn.hust.social.backend.entity.user.UserAuth.AuthProvider;
 import vn.hust.social.backend.exception.*;
 import vn.hust.social.backend.mapper.UserAuthMapper;
 import vn.hust.social.backend.mapper.UserMapper;
@@ -74,7 +75,7 @@ public class AuthService {
 
         return new LoginResponse("Bearer",
                 jwtUtils.generateAccessToken(userAuth.getEmail(), userAuth.getProvider().name(), user.getRole().name()),
-                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto,
+                jwtUtils.generateRefreshToken(userAuth.getEmail(), userAuth.getProvider().name()), userDto,
                 userAuthMapper.toDTO(userAuth));
     }
 
@@ -98,7 +99,7 @@ public class AuthService {
 
         return new LoginResponse("Bearer",
                 jwtUtils.generateAccessToken(userAuth.getEmail(), userAuth.getProvider().name(), user.getRole().name()),
-                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto,
+                jwtUtils.generateRefreshToken(userAuth.getEmail(), userAuth.getProvider().name()), userDto,
                 userAuthMapper.toDTO(userAuth));
     }
 
@@ -112,7 +113,7 @@ public class AuthService {
 
         return new LoginResponse("Bearer",
                 jwtUtils.generateAccessToken(userAuth.getEmail(), userAuth.getProvider().name(), user.getRole().name()),
-                jwtUtils.generateRefreshToken(userAuth.getEmail()), userDto,
+                jwtUtils.generateRefreshToken(userAuth.getEmail(), userAuth.getProvider().name()), userDto,
                 userAuthMapper.toDTO(userAuth));
     }
 
@@ -135,5 +136,41 @@ public class AuthService {
 
     public boolean existsByProviderAndEmail(UserAuth.AuthProvider authProvider, String email) {
         return userAuthRepository.existsByProviderAndEmail(authProvider, email);
+    }
+
+    @Transactional
+    public LoginResponse refreshToken(String refreshToken) {
+        String email;
+        String providerStr;
+        try {
+            email = jwtUtils.extractEmail(refreshToken);
+            providerStr = jwtUtils.extractProvider(refreshToken);
+        } catch (Exception e) {
+            throw new ApiException(ResponseCode.UNAUTHORIZED);
+        }
+
+        AuthProvider provider;
+        if (providerStr == null) {
+            // For backward compatibility or invalid token structure
+            throw new ApiException(ResponseCode.UNAUTHORIZED);
+        } else {
+            try {
+                provider = AuthProvider.valueOf(providerStr);
+            } catch (IllegalArgumentException e) {
+                throw new ApiException(ResponseCode.UNAUTHORIZED);
+            }
+        }
+
+        UserAuth userAuth = userAuthRepository.findByProviderAndEmail(provider, email)
+                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+
+        User user = userAuth.getUser();
+        UserDTO userDto = userMapper.toDTO(user);
+
+        return new LoginResponse("Bearer",
+                jwtUtils.generateAccessToken(userAuth.getEmail(), userAuth.getProvider().name(), user.getRole().name()),
+                jwtUtils.generateRefreshToken(userAuth.getEmail(), userAuth.getProvider().name()),
+                userDto,
+                userAuthMapper.toDTO(userAuth));
     }
 }

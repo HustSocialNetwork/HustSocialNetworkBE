@@ -11,9 +11,10 @@ import vn.hust.social.backend.dto.EventDTO;
 import vn.hust.social.backend.dto.EventParticipantDTO;
 import vn.hust.social.backend.dto.event.CreateEventRequest;
 import vn.hust.social.backend.dto.event.CreateEventResponse;
+import vn.hust.social.backend.dto.event.GetEventParticipantsResponse;
 import vn.hust.social.backend.dto.event.UpdateEventRequest;
 import vn.hust.social.backend.dto.event.UpdateEventResponse;
-import vn.hust.social.backend.dto.event.get.GetEventsResponse;
+import vn.hust.social.backend.dto.event.GetEventsResponse;
 import jakarta.validation.constraints.Max;
 import org.springframework.validation.annotation.Validated;
 
@@ -132,5 +133,38 @@ public class EventController {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         eventService.rejectEventParticipant(id, userId, email);
         return ApiResponse.success(null);
+    }
+
+    @GetMapping("/{id}/participants")
+    @Operation(summary = "Get event participants", description = "Get list of participants for an event")
+    public ApiResponse<GetEventParticipantsResponse> getEventParticipants(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") @Max(50) int pageSize,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(eventService.getEventParticipants(id, page, pageSize, email));
+    }
+
+    @GetMapping("/{id}/participants/{participantId}")
+    @Operation(summary = "Get event participant by ID", description = "Get details of a specific participant")
+    public ApiResponse<EventParticipantDTO> getEventParticipantById(
+            @PathVariable UUID id,
+            @PathVariable UUID participantId,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(eventService.getEventParticipantById(id, participantId, email));
+    }
+
+    @GetMapping("/{id}/participants/search")
+    @Operation(summary = "Search event participants", description = "Search participants by name")
+    public ApiResponse<GetEventParticipantsResponse> searchEventParticipants(
+            @PathVariable UUID id,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") @Max(50) int pageSize,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(eventService.searchEventParticipants(id, keyword, page, pageSize, email));
     }
 }

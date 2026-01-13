@@ -11,9 +11,12 @@ import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.EventDTO;
 import vn.hust.social.backend.dto.event.CreateEventRequest;
 import vn.hust.social.backend.dto.event.CreateEventResponse;
+import vn.hust.social.backend.dto.event.GetEventParticipantsResponse;
 import vn.hust.social.backend.dto.event.UpdateEventRequest;
 import vn.hust.social.backend.dto.event.UpdateEventResponse;
-import vn.hust.social.backend.dto.event.get.GetEventsResponse;
+
+import vn.hust.social.backend.dto.event.GetEventsResponse;
+import vn.hust.social.backend.dto.EventParticipantDTO;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
@@ -27,6 +30,7 @@ import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.EventMapper;
+import vn.hust.social.backend.mapper.EventParticipantMapper;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
 import vn.hust.social.backend.repository.club.ClubModeratorRepository;
 import vn.hust.social.backend.repository.club.ClubRepository;
@@ -47,7 +51,9 @@ public class EventService {
         private final UserAuthRepository userAuthRepository;
         private final EventParticipantRepository eventParticipantRepository;
         private final ClubRepository clubRepository;
+
         private final ClubModeratorRepository clubModeratorRepository;
+        private final EventParticipantMapper eventParticipantMapper;
 
         @Transactional(readOnly = true)
         public EventDTO getEventById(UUID eventId, String email) {
@@ -146,11 +152,15 @@ public class EventService {
                         throw new ApiException(ResponseCode.FORBIDDEN);
                 }
 
+                if (request.startTime().isAfter(request.endTime())) {
+                        throw new ApiException(ResponseCode.INVALID_EVENT_TIME);
+                }
+
                 Event event = new Event(club, request.title(), request.startTime(), request.endTime(), request.type(),
                                 request.maxParticipants());
                 event.setDescription(request.description());
                 event.setLocation(request.location());
-                event.setBannerKey(request.bannerKey());
+                if (request.bannerKey() != null) event.setBannerKey(request.bannerKey());
 
                 event = eventRepository.save(event);
 
@@ -173,6 +183,10 @@ public class EventService {
                                 .orElse(false);
                 if (!isModerator) {
                         throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                if (request.startTime().isAfter(request.endTime())) {
+                    throw new ApiException(ResponseCode.INVALID_EVENT_TIME);
                 }
 
                 if (request.title() != null)
@@ -336,5 +350,67 @@ public class EventService {
 
                 participant.setStatus(ParticipantStatus.REJECTED);
                 eventParticipantRepository.save(participant);
+        }
+
+        @Transactional(readOnly = true)
+        public GetEventParticipantsResponse getEventParticipants(UUID eventId, int page, int pageSize, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+
+                // Ensure event exists
+                if (!eventRepository.existsById(eventId)) {
+                        throw new ApiException(ResponseCode.EVENT_NOT_FOUND);
+                }
+
+                Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("registeredAt").descending());
+                Page<EventParticipant> participantsPage = eventParticipantRepository.findByEventId(eventId, pageable);
+
+                List<EventParticipantDTO> dtos = participantsPage.getContent().stream()
+                                .map(eventParticipantMapper::toDTO)
+                                .toList();
+
+                return new GetEventParticipantsResponse(dtos);
+        }
+
+        @Transactional(readOnly = true)
+        public EventParticipantDTO getEventParticipantById(UUID eventId, UUID participantId, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+
+                // Ensure event exists
+                if (!eventRepository.existsById(eventId)) {
+                        throw new ApiException(ResponseCode.EVENT_NOT_FOUND);
+                }
+
+                EventParticipant participant = eventParticipantRepository.findById(participantId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_REGISTRATION_NOT_FOUND));
+
+                if (!participant.getEvent().getId().equals(eventId)) {
+                        throw new ApiException(ResponseCode.EVENT_REGISTRATION_NOT_FOUND);
+                }
+
+                return eventParticipantMapper.toDTO(participant);
+        }
+
+        @Transactional(readOnly = true)
+        public GetEventParticipantsResponse searchEventParticipants(UUID eventId, String keyword, int page,
+                        int pageSize, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+
+                // Ensure event exists
+                if (!eventRepository.existsById(eventId)) {
+                        throw new ApiException(ResponseCode.EVENT_NOT_FOUND);
+                }
+
+                Pageable pageable = PageRequest.of(page - 1, pageSize);
+                Page<EventParticipant> participantsPage = eventParticipantRepository.searchByEventIdAndKeyword(eventId,
+                                keyword, pageable);
+
+                List<EventParticipantDTO> dtos = participantsPage.getContent().stream()
+                                .map(eventParticipantMapper::toDTO)
+                                .toList();
+
+                return new GetEventParticipantsResponse(dtos);
         }
 }
