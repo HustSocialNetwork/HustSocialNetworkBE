@@ -19,5 +19,8 @@ public interface ClubModeratorRepository extends JpaRepository<ClubModerator, UU
 
     List<ClubModerator> findAllByClubIdAndRoleAndStatus(UUID clubId, ClubRole role, ClubModeratorStatus status);
 
+    List<ClubModerator> findAllByUserIdAndClubIdInAndStatus(UUID userId, List<UUID> clubIds,
+            ClubModeratorStatus status);
+
     Page<ClubModerator> findByUserIdAndStatus(UUID userId, ClubModeratorStatus status, Pageable pageable);
 }

@@ -81,6 +81,8 @@ public enum ResponseCode {
 
     // ===== EVENT =====
     EVENT_NOT_FOUND(11001, "Event not found", HttpStatus.NOT_FOUND),
+    EVENT_FULL(11002, "Event is full", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_JOINED_EVENT(11003, "You have already joined this event", HttpStatus.BAD_REQUEST),
 
     // ===== CLUB =====
     CLUB_NOT_FOUND(12001, "Club not found", HttpStatus.NOT_FOUND),

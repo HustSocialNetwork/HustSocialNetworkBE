@@ -26,8 +26,9 @@ import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
 
 import java.util.UUID;
 import vn.hust.social.backend.dto.club.GetAllClubsResponse;
+
 import vn.hust.social.backend.dto.club.SearchClubsResponse;
-import java.util.List;
+import vn.hust.social.backend.dto.club.GetClubResponse;
 
 @RestController
 @RequestMapping("/api/clubs")
@@ -169,5 +170,15 @@ public class ClubController {
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(clubService.searchClubs(name, page, size, email));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get a club by ID")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<GetClubResponse> getClub(
+            @PathVariable UUID id,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(clubService.getClub(id, email));
     }
 }

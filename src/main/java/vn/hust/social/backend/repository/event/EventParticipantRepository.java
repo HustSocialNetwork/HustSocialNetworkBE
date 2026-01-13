@@ -13,4 +13,6 @@ public interface EventParticipantRepository extends JpaRepository<EventParticipa
     Optional<EventParticipant> findByEventIdAndUserId(UUID eventId, UUID userId);
 
     List<EventParticipant> findByUserIdAndEventIdIn(UUID userId, List<UUID> eventIds);
+
+    boolean existsByEventIdAndUserId(UUID eventId, UUID userId);
 }

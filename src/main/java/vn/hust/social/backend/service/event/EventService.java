@@ -9,16 +9,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 import vn.hust.social.backend.common.response.ResponseCode;
 import vn.hust.social.backend.dto.EventDTO;
+import vn.hust.social.backend.dto.event.CreateEventRequest;
+import vn.hust.social.backend.dto.event.CreateEventResponse;
+import vn.hust.social.backend.dto.event.UpdateEventRequest;
+import vn.hust.social.backend.dto.event.UpdateEventResponse;
 import vn.hust.social.backend.dto.event.get.GetEventsResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+
+import vn.hust.social.backend.entity.club.Club;
+import vn.hust.social.backend.entity.enums.club.ClubModeratorStatus;
+import vn.hust.social.backend.entity.enums.event.EventType;
 import vn.hust.social.backend.entity.enums.event.ParticipantStatus;
 import vn.hust.social.backend.entity.event.Event;
 import vn.hust.social.backend.entity.event.EventParticipant;
+import vn.hust.social.backend.entity.user.User;
 import vn.hust.social.backend.entity.user.UserAuth;
 import vn.hust.social.backend.exception.ApiException;
 import vn.hust.social.backend.mapper.EventMapper;
 import vn.hust.social.backend.repository.auth.UserAuthRepository;
+import vn.hust.social.backend.repository.club.ClubModeratorRepository;
+import vn.hust.social.backend.repository.club.ClubRepository;
 import vn.hust.social.backend.repository.event.EventParticipantRepository;
 import vn.hust.social.backend.repository.event.EventRepository;
 
@@ -35,6 +46,8 @@ public class EventService {
         private final EventMapper eventMapper;
         private final UserAuthRepository userAuthRepository;
         private final EventParticipantRepository eventParticipantRepository;
+        private final ClubRepository clubRepository;
+        private final ClubModeratorRepository clubModeratorRepository;
 
         @Transactional(readOnly = true)
         public EventDTO getEventById(UUID eventId, String email) {
@@ -91,5 +104,150 @@ public class EventService {
                                 .toList();
 
                 return new GetEventsResponse(eventDTOs);
+        }
+
+        @Transactional(readOnly = true)
+        public GetEventsResponse searchEvents(String keyword, int page, int pageSize, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                UUID userId = userAuth.getUser().getId();
+
+                Pageable pageable = PageRequest.of(page - 1, pageSize);
+                Page<Event> eventsPage = eventRepository.searchByTitle(keyword, pageable);
+
+                List<EventDTO> eventDTOs = eventsPage.getContent().stream().map(event -> {
+                        ParticipantStatus status = eventParticipantRepository
+                                        .findByEventIdAndUserId(event.getId(), userId)
+                                        .map(EventParticipant::getStatus)
+                                        .orElse(null);
+                        EventDTO dto = eventMapper.toDTO(event);
+                        dto.setMyRegistrationStatus(status);
+                        return dto;
+                }).collect(Collectors.toList());
+
+                return new GetEventsResponse(eventDTOs);
+        }
+
+        @Transactional
+        public CreateEventResponse createEvent(
+                        UUID clubId,
+                        CreateEventRequest request, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Club club = clubRepository.findById(clubId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
+
+                // Check authorization
+                boolean isModerator = clubModeratorRepository.findByClubIdAndUserId(club.getId(), user.getId())
+                                .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isModerator) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                Event event = new Event(club, request.title(), request.startTime(), request.endTime(), request.type(),
+                                request.maxParticipants());
+                event.setDescription(request.description());
+                event.setLocation(request.location());
+                event.setBannerKey(request.bannerKey());
+
+                event = eventRepository.save(event);
+
+                return new CreateEventResponse(eventMapper.toDTO(event));
+        }
+
+        @Transactional
+        public void joinEvent(UUID eventId, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
+
+                if (eventParticipantRepository.existsByEventIdAndUserId(eventId, user.getId())) {
+                        throw new ApiException(ResponseCode.USER_ALREADY_JOINED_EVENT);
+                }
+
+                if (event.getRegisteredCount() >= event.getMaxParticipants()) {
+                        throw new ApiException(ResponseCode.EVENT_FULL);
+                }
+
+                if (event.getType() == EventType.PRIVATE) {
+                        EventParticipant participant = new EventParticipant(event, user, ParticipantStatus.PENDING);
+                        eventParticipantRepository.save(participant);
+                } else {
+                        EventParticipant participant = new EventParticipant(event, user, ParticipantStatus.ACCEPTED);
+                        eventParticipantRepository.save(participant);
+
+                        event.setRegisteredCount(event.getRegisteredCount() + 1);
+                        eventRepository.save(event);
+                }
+        }
+
+        @Transactional
+        public UpdateEventResponse updateEvent(UUID eventId,
+                        UpdateEventRequest request, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
+
+                // Check authorization
+                boolean isModerator = clubModeratorRepository
+                                .findByClubIdAndUserId(event.getClub().getId(), user.getId())
+                                .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isModerator) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                if (request.title() != null)
+                        event.setTitle(request.title());
+                if (request.description() != null)
+                        event.setDescription(request.description());
+                if (request.startTime() != null)
+                        event.setStartTime(request.startTime());
+                if (request.endTime() != null)
+                        event.setEndTime(request.endTime());
+                if (request.location() != null)
+                        event.setLocation(request.location());
+                if (request.bannerKey() != null)
+                        event.setBannerKey(request.bannerKey());
+                if (request.type() != null)
+                        event.setType(request.type());
+                if (request.maxParticipants() != null)
+                        event.setMaxParticipants(request.maxParticipants());
+                if (request.status() != null)
+                        event.setStatus(request.status());
+
+                event = eventRepository.save(event);
+
+                return new UpdateEventResponse(eventMapper.toDTO(event));
+        }
+
+        @Transactional
+        public void deleteEvent(UUID eventId, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
+
+                // Check authorization
+                boolean isModerator = clubModeratorRepository
+                                .findByClubIdAndUserId(event.getClub().getId(), user.getId())
+                                .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isModerator) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                eventRepository.delete(event);
         }
 }
