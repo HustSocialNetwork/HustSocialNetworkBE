@@ -83,6 +83,10 @@ public enum ResponseCode {
     EVENT_NOT_FOUND(11001, "Event not found", HttpStatus.NOT_FOUND),
     EVENT_FULL(11002, "Event is full", HttpStatus.BAD_REQUEST),
     USER_ALREADY_JOINED_EVENT(11003, "You have already joined this event", HttpStatus.BAD_REQUEST),
+    USER_NOT_JOINED_EVENT(11004, "You have not joined this event", HttpStatus.BAD_REQUEST),
+    EVENT_REGISTRATION_NOT_FOUND(11005, "Event registration not found", HttpStatus.NOT_FOUND),
+    EVENT_PARTICIPANT_ALREADY_APPROVED(11006, "Event participant already approved", HttpStatus.BAD_REQUEST),
+    EVENT_PARTICIPANT_ALREADY_REJECTED(11007, "Event participant already rejected", HttpStatus.BAD_REQUEST),
 
     // ===== CLUB =====
     CLUB_NOT_FOUND(12001, "Club not found", HttpStatus.NOT_FOUND),
