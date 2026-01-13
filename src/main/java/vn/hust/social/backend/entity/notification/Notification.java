@@ -26,7 +26,6 @@ public class Notification extends Base {
         this.actor = actor;
         this.targetType = targetType;
         this.targetId = targetId;
-        this.isRead = false;
     }
 
     @Id
@@ -49,5 +48,5 @@ public class Notification extends Base {
     private UUID targetId;
 
     @Column(name = "is_read")
-    private boolean isRead = false;
+    private boolean read = false;
 }

@@ -139,7 +139,6 @@ public class EventService {
                 Club club = clubRepository.findById(clubId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
 
-                // Check authorization
                 boolean isModerator = clubModeratorRepository.findByClubIdAndUserId(club.getId(), user.getId())
                                 .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
                                 .orElse(false);
@@ -159,35 +158,6 @@ public class EventService {
         }
 
         @Transactional
-        public void joinEvent(UUID eventId, String email) {
-                UserAuth userAuth = userAuthRepository.findByEmail(email)
-                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
-                User user = userAuth.getUser();
-
-                Event event = eventRepository.findById(eventId)
-                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
-
-                if (eventParticipantRepository.existsByEventIdAndUserId(eventId, user.getId())) {
-                        throw new ApiException(ResponseCode.USER_ALREADY_JOINED_EVENT);
-                }
-
-                if (event.getRegisteredCount() >= event.getMaxParticipants()) {
-                        throw new ApiException(ResponseCode.EVENT_FULL);
-                }
-
-                if (event.getType() == EventType.PRIVATE) {
-                        EventParticipant participant = new EventParticipant(event, user, ParticipantStatus.PENDING);
-                        eventParticipantRepository.save(participant);
-                } else {
-                        EventParticipant participant = new EventParticipant(event, user, ParticipantStatus.ACCEPTED);
-                        eventParticipantRepository.save(participant);
-
-                        event.setRegisteredCount(event.getRegisteredCount() + 1);
-                        eventRepository.save(event);
-                }
-        }
-
-        @Transactional
         public UpdateEventResponse updateEvent(UUID eventId,
                         UpdateEventRequest request, String email) {
                 UserAuth userAuth = userAuthRepository.findByEmail(email)
@@ -197,7 +167,6 @@ public class EventService {
                 Event event = eventRepository.findById(eventId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
 
-                // Check authorization
                 boolean isModerator = clubModeratorRepository
                                 .findByClubIdAndUserId(event.getClub().getId(), user.getId())
                                 .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
@@ -239,7 +208,6 @@ public class EventService {
                 Event event = eventRepository.findById(eventId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
 
-                // Check authorization
                 boolean isModerator = clubModeratorRepository
                                 .findByClubIdAndUserId(event.getClub().getId(), user.getId())
                                 .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
@@ -249,5 +217,124 @@ public class EventService {
                 }
 
                 eventRepository.delete(event);
+        }
+
+        @Transactional
+        public void joinEvent(UUID eventId, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
+
+                if (eventParticipantRepository.existsByEventIdAndUserId(eventId, user.getId())) {
+                        throw new ApiException(ResponseCode.USER_ALREADY_JOINED_EVENT);
+                }
+
+                if (event.getRegisteredCount() >= event.getMaxParticipants()) {
+                        throw new ApiException(ResponseCode.EVENT_FULL);
+                }
+
+                if (event.getType() == EventType.PRIVATE) {
+                        EventParticipant participant = new EventParticipant(event, user, ParticipantStatus.PENDING);
+                        eventParticipantRepository.save(participant);
+                } else {
+                        EventParticipant participant = new EventParticipant(event, user, ParticipantStatus.ACCEPTED);
+                        eventParticipantRepository.save(participant);
+
+                        event.setRegisteredCount(event.getRegisteredCount() + 1);
+                        eventRepository.save(event);
+                }
+        }
+
+        @Transactional
+        public void leaveEvent(UUID eventId, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
+
+                EventParticipant participant = eventParticipantRepository.findByEventIdAndUserId(eventId, user.getId())
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_JOINED_EVENT));
+
+                eventParticipantRepository.delete(participant);
+
+                if (participant.getStatus() == ParticipantStatus.ACCEPTED) {
+                        event.setRegisteredCount(event.getRegisteredCount() - 1);
+                        eventRepository.save(event);
+                }
+        }
+
+        @Transactional
+        public void approveEventParticipant(UUID eventId, UUID userId, String moderatorEmail) {
+                UserAuth moderatorAuth = userAuthRepository.findByEmail(moderatorEmail)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User moderator = moderatorAuth.getUser();
+
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
+
+                boolean isModerator = clubModeratorRepository
+                                .findByClubIdAndUserId(event.getClub().getId(), moderator.getId())
+                                .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isModerator) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                EventParticipant participant = eventParticipantRepository.findByEventIdAndUserId(eventId, userId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_REGISTRATION_NOT_FOUND));
+
+                if (participant.getStatus() == ParticipantStatus.ACCEPTED) {
+                        throw new ApiException(ResponseCode.EVENT_PARTICIPANT_ALREADY_APPROVED);
+                } else if (participant.getStatus() == ParticipantStatus.REJECTED) {
+                        throw new ApiException(ResponseCode.EVENT_PARTICIPANT_ALREADY_REJECTED);
+                }
+
+                if (event.getRegisteredCount() >= event.getMaxParticipants()) {
+                        throw new ApiException(ResponseCode.EVENT_FULL);
+                }
+
+                participant.setStatus(ParticipantStatus.ACCEPTED);
+                eventParticipantRepository.save(participant);
+
+                event.setRegisteredCount(event.getRegisteredCount() + 1);
+                eventRepository.save(event);
+        }
+
+        @Transactional
+        public void rejectEventParticipant(UUID eventId, UUID userId, String moderatorEmail) {
+                UserAuth moderatorAuth = userAuthRepository.findByEmail(moderatorEmail)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User moderator = moderatorAuth.getUser();
+
+                Event event = eventRepository.findById(eventId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_NOT_FOUND));
+
+                boolean isModerator = clubModeratorRepository
+                                .findByClubIdAndUserId(event.getClub().getId(), moderator.getId())
+                                .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isModerator) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                EventParticipant participant = eventParticipantRepository.findByEventIdAndUserId(eventId, userId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.EVENT_REGISTRATION_NOT_FOUND));
+
+                if (participant.getStatus() == ParticipantStatus.REJECTED) {
+                        throw new ApiException(ResponseCode.EVENT_PARTICIPANT_ALREADY_REJECTED);
+                }
+
+                if (participant.getStatus() == ParticipantStatus.ACCEPTED) {
+                        event.setRegisteredCount(event.getRegisteredCount() - 1);
+                        eventRepository.save(event);
+                }
+
+                participant.setStatus(ParticipantStatus.REJECTED);
+                eventParticipantRepository.save(participant);
         }
 }

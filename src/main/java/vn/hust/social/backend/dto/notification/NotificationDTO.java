@@ -13,7 +13,7 @@ public record NotificationDTO(
         NotificationType targetType,
         UUID targetId,
         String message,
-        boolean isRead,
+        boolean read,
         Instant createdAt,
         Instant updatedAt) {
 }

@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import vn.hust.social.backend.dto.EventDTO;
+import vn.hust.social.backend.dto.EventParticipantDTO;
 import vn.hust.social.backend.dto.event.CreateEventRequest;
 import vn.hust.social.backend.dto.event.CreateEventResponse;
 import vn.hust.social.backend.dto.event.UpdateEventRequest;
@@ -61,16 +62,6 @@ public class EventController {
         return ApiResponse.success(eventService.searchEvents(keyword, page, pageSize, email));
     }
 
-    @PostMapping("/{id}/join")
-    @Operation(summary = "Join an event")
-    public ApiResponse<Void> joinEvent(
-            @PathVariable UUID id,
-            HttpServletRequest request) {
-        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
-        eventService.joinEvent(id, email);
-        return ApiResponse.success(null);
-    }
-
     @PostMapping
     @Operation(summary = "Create an event", description = "Create a new event")
     public ApiResponse<CreateEventResponse> createEvent(
@@ -98,6 +89,48 @@ public class EventController {
             HttpServletRequest httpRequest) {
         String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
         eventService.deleteEvent(id, email);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/{id}/join")
+    @Operation(summary = "Join an event")
+    public ApiResponse<Void> joinEvent(
+            @PathVariable UUID id,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        eventService.joinEvent(id, email);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/{id}/leave")
+    @Operation(summary = "Leave an event")
+    public ApiResponse<Void> leaveEvent(
+            @PathVariable UUID id,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        eventService.leaveEvent(id, email);
+        return ApiResponse.success(null);
+    }
+
+    @PutMapping("/{id}/participants/{userId}/approve")
+    @Operation(summary = "Approve event participant request", description = "Approve a user's request to join an event (for private events)")
+    public ApiResponse<Void> approveEventParticipant(
+            @PathVariable UUID id,
+            @PathVariable UUID userId,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        eventService.approveEventParticipant(id, userId, email);
+        return ApiResponse.success(null);
+    }
+
+    @PutMapping("/{id}/participants/{userId}/reject")
+    @Operation(summary = "Reject event participant request", description = "Reject a user's request to join an event (for private events)")
+    public ApiResponse<Void> rejectEventParticipant(
+            @PathVariable UUID id,
+            @PathVariable UUID userId,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        eventService.rejectEventParticipant(id, userId, email);
         return ApiResponse.success(null);
     }
 }
