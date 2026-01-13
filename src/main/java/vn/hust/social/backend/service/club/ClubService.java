@@ -42,6 +42,7 @@ import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
 
 import vn.hust.social.backend.dto.ClubWithStatusDTO;
 import vn.hust.social.backend.dto.club.GetAllClubsResponse;
+import vn.hust.social.backend.dto.club.GetClubResponse;
 import vn.hust.social.backend.dto.club.SearchClubsResponse;
 import java.util.Optional;
 import java.util.List;
@@ -339,9 +340,14 @@ public class ClubService {
                                 user.getId(), clubIds, ClubFollowerStatus.ACTIVE)
                                 .stream().map(cf -> cf.getClub().getId()).toList();
 
+                List<UUID> managedClubIds = clubModeratorRepository.findAllByUserIdAndClubIdInAndStatus(
+                                user.getId(), clubIds, ClubModeratorStatus.ACTIVE)
+                                .stream().map(cm -> cm.getClub().getId()).toList();
+
                 List<ClubWithStatusDTO> clubWithStatusDTOS = clubsPage.getContent().stream()
                                 .map(club -> new ClubWithStatusDTO(clubMapper.toClubDTO(club),
-                                                followedClubIds.contains(club.getId())))
+                                                followedClubIds.contains(club.getId()),
+                                                managedClubIds.contains(club.getId())))
                                 .toList();
 
                 return new GetAllClubsResponse(clubWithStatusDTOS);
@@ -365,11 +371,37 @@ public class ClubService {
                                 user.getId(), clubIds, ClubFollowerStatus.ACTIVE)
                                 .stream().map(cf -> cf.getClub().getId()).toList();
 
+                List<UUID> managedClubIds = clubModeratorRepository.findAllByUserIdAndClubIdInAndStatus(
+                                user.getId(), clubIds, ClubModeratorStatus.ACTIVE)
+                                .stream().map(cm -> cm.getClub().getId()).toList();
+
                 List<ClubWithStatusDTO> clubWithStatusDTOS = clubsPage.getContent().stream()
                                 .map(club -> new ClubWithStatusDTO(clubMapper.toClubDTO(club),
-                                                followedClubIds.contains(club.getId())))
+                                                followedClubIds.contains(club.getId()),
+                                                managedClubIds.contains(club.getId())))
                                 .toList();
 
                 return new SearchClubsResponse(clubWithStatusDTOS);
+        }
+
+        @Transactional(readOnly = true)
+        public GetClubResponse getClub(UUID clubId, String email) {
+                UserAuth userAuth = userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User user = userAuth.getUser();
+
+                Club club = clubRepository.findById(clubId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
+
+                boolean isFollowed = clubFollowerRepository.existsByClubIdAndUserId(clubId, user.getId())
+                                && clubFollowerRepository.findByClubIdAndUserId(clubId, user.getId()).get()
+                                                .getStatus() == ClubFollowerStatus.ACTIVE;
+
+                boolean isManaged = clubModeratorRepository.findByClubIdAndUserId(clubId, user.getId())
+                                .map(m -> m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+
+                return new GetClubResponse(
+                                new ClubWithStatusDTO(clubMapper.toClubDTO(club), isFollowed, isManaged));
         }
 }

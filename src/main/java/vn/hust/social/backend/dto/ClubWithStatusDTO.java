@@ -12,10 +12,11 @@ public record ClubWithStatusDTO(
         Integer followerCount,
         Instant createdAt,
         Instant updatedAt,
-        boolean followedByUser) {
+        boolean followedByUser,
+        boolean managedByUser) {
 
-    public ClubWithStatusDTO(ClubDTO club, boolean followedByUser) {
+    public ClubWithStatusDTO(ClubDTO club, boolean followedByUser, boolean managedByUser) {
         this(club.id(), club.name(), club.description(), club.avatarKey(), club.backgroundKey(),
-                club.followerCount(), club.createdAt(), club.updatedAt(), followedByUser);
+                club.followerCount(), club.createdAt(), club.updatedAt(), followedByUser, managedByUser);
     }
 }
