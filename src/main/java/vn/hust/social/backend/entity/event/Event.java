@@ -41,7 +41,7 @@ public class Event extends Base {
     private String location;
 
     @Column(name = "banner_key")
-    private String bannerKey;
+    private String bannerKey = "/event-banners/default.png";
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

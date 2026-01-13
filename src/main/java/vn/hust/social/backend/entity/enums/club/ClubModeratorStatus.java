@@ -4,5 +4,6 @@ public enum ClubModeratorStatus {
     PENDING_APPLICATION,
     INVITED,
     ACTIVE,
-    REJECTED
+    REJECTED,
+    REVOKED
 }

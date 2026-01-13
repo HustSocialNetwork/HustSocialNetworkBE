@@ -29,6 +29,8 @@ import vn.hust.social.backend.dto.club.GetAllClubsResponse;
 
 import vn.hust.social.backend.dto.club.SearchClubsResponse;
 import vn.hust.social.backend.dto.club.GetClubResponse;
+import vn.hust.social.backend.dto.club.UpdateClubRequest;
+import vn.hust.social.backend.dto.club.UpdateClubResponse;
 
 @RestController
 @RequestMapping("/api/clubs")
@@ -47,6 +49,17 @@ public class ClubController {
             HttpServletRequest httpRequest) {
         String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
         return ApiResponse.success(clubService.createClub(request, email));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update a club")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<UpdateClubResponse> updateClub(
+            @PathVariable UUID id,
+            @RequestBody UpdateClubRequest request,
+            HttpServletRequest httpRequest) {
+        String email = JwtHeaderUtils.extractEmail(httpRequest, jwtUtils);
+        return ApiResponse.success(clubService.updateClub(id, request, email));
     }
 
     @PostMapping("/follow/{id}")
@@ -136,6 +149,18 @@ public class ClubController {
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(clubService.getFollowedClubs(email, page, size));
+    }
+
+    @DeleteMapping("/{id}/moderators/{userId}")
+    @Operation(summary = "Remove a moderator from the club")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<Void> removeModerator(
+            @PathVariable UUID id,
+            @PathVariable UUID userId,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        clubService.removeModerator(id, userId, email);
+        return ApiResponse.success(null);
     }
 
     @GetMapping("/me/managing")

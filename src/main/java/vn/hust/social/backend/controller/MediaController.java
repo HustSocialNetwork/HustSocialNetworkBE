@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
+import vn.hust.social.backend.dto.media.DeleteMediasRequest;
+import vn.hust.social.backend.dto.media.DeleteMediasResponse;
 import vn.hust.social.backend.dto.media.download.DownloadMediasRequest;
 import vn.hust.social.backend.dto.media.download.DownloadMediasResponse;
 import vn.hust.social.backend.dto.media.upload.UploadMediaRequest;
@@ -47,4 +49,10 @@ public class MediaController {
                 downloadMediasRequest.downloadMediaRequests(), bucketName, email));
     }
 
+    @DeleteMapping("/delete-multiple")
+    @Operation(summary = "Delete multiple medias", description = "Delete multiple medias from bucket")
+    public ApiResponse<DeleteMediasResponse> deleteMultipleMedias(@RequestBody DeleteMediasRequest request,
+            @RequestParam String bucketName) {
+        return ApiResponse.success(mediaService.deleteMedias(request.objectKeys(), bucketName));
+    }
 }

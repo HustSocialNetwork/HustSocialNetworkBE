@@ -32,9 +32,10 @@ public class JwtUtils {
                 .compact();
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(String email, String provider) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("provider", provider)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
                 .signWith(SignatureAlgorithm.HS256, secret)
@@ -64,6 +65,18 @@ public class JwtUtils {
                     .parseClaimsJws(token)
                     .getBody()
                     .get("role", String.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid token");
+        }
+    }
+
+    public String extractProvider(String token) {
+        try {
+            return Jwts.parser()
+                    .setSigningKey(secret)
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get("provider", String.class);
         } catch (Exception e) {
             throw new RuntimeException("Invalid token");
         }

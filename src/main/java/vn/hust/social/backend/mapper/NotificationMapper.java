@@ -3,7 +3,8 @@ package vn.hust.social.backend.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-import vn.hust.social.backend.dto.notification.NotificationDTO;
+
+import vn.hust.social.backend.dto.NotificationDTO;
 import vn.hust.social.backend.entity.notification.Notification;
 
 @Mapper(componentModel = "spring", uses = { UserMapper.class })

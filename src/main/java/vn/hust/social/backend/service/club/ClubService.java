@@ -44,6 +44,8 @@ import vn.hust.social.backend.dto.ClubWithStatusDTO;
 import vn.hust.social.backend.dto.club.GetAllClubsResponse;
 import vn.hust.social.backend.dto.club.GetClubResponse;
 import vn.hust.social.backend.dto.club.SearchClubsResponse;
+import vn.hust.social.backend.dto.club.UpdateClubRequest;
+import vn.hust.social.backend.dto.club.UpdateClubResponse;
 import java.util.Optional;
 import java.util.List;
 
@@ -147,6 +149,47 @@ public class ClubService {
         }
 
         @Transactional
+        public UpdateClubResponse updateClub(UUID clubId, UpdateClubRequest request, String requesterEmail) {
+                UserAuth requesterAuth = userAuthRepository.findByEmail(requesterEmail)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User requester = requesterAuth.getUser();
+
+                boolean isSenderAdmin = clubModeratorRepository.findByClubIdAndUserId(clubId, requester.getId())
+                                .map(m -> m.getRole() == ClubRole.CLUB_ADMIN
+                                                && m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isSenderAdmin) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                Club club = clubRepository.findById(clubId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
+
+                if (request.name() != null && !request.name().isEmpty() && !request.name().equals(club.getName())) {
+                        if (clubRepository.existsByName(request.name())) {
+                                throw new ApiException(ResponseCode.CLUB_NAME_ALREADY_EXISTS);
+                        }
+                        club.setName(request.name());
+                }
+
+                if (request.description() != null) {
+                        club.setDescription(request.description());
+                }
+
+                if (request.avatarKey() != null) {
+                        club.setAvatarKey(request.avatarKey());
+                }
+
+                if (request.backgroundKey() != null) {
+                        club.setBackgroundKey(request.backgroundKey());
+                }
+
+                club = clubRepository.save(club);
+
+                return new UpdateClubResponse(clubMapper.toClubDTO(club));
+        }
+
+        @Transactional
         public InviteManageResponse inviteToManage(UUID clubId, UUID studentId, ClubRole role, String requesterEmail) {
                 UserAuth requesterAuth = userAuthRepository.findByEmail(requesterEmail)
                                 .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
@@ -165,11 +208,23 @@ public class ClubService {
                 Club club = clubRepository.findById(clubId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
 
-                if (clubModeratorRepository.findByClubIdAndUserId(clubId, studentId).isPresent()) {
-                        throw new ApiException(ResponseCode.USER_ALREADY_MODERATOR);
+                Optional<ClubModerator> existingModerator = clubModeratorRepository.findByClubIdAndUserId(clubId,
+                                studentId);
+                ClubModerator moderator;
+                if (existingModerator.isPresent()) {
+                        moderator = existingModerator.get();
+                        if (moderator.getStatus() == ClubModeratorStatus.ACTIVE) {
+                                throw new ApiException(ResponseCode.USER_ALREADY_MODERATOR);
+                        } else if (moderator.getStatus() == ClubModeratorStatus.INVITED) {
+                                throw new ApiException(ResponseCode.USER_HAS_ALREADY_BEEN_INVITED);
+                        }
+                        // For REJECTED, PENDING_APPLICATION, REVOKED, we can re-invite
+                        moderator.setStatus(ClubModeratorStatus.INVITED);
+                        moderator.setRole(role); // Update role if changed
+                } else {
+                        moderator = new ClubModerator(club, student, role, ClubModeratorStatus.INVITED);
                 }
 
-                ClubModerator moderator = new ClubModerator(club, student, role, ClubModeratorStatus.INVITED);
                 moderator = clubModeratorRepository.save(moderator);
 
                 notificationService.sendNotification(student, requester, NotificationType.INVITE_CLUB_MANAGE, clubId);
@@ -290,6 +345,35 @@ public class ClubService {
                 notificationService.sendNotification(user, rejector, NotificationType.REJECT_CLUB_APPLICATION, clubId);
 
                 return new RejectApplicationResponse(clubMapper.toClubModeratorDTO(application));
+        }
+
+        @Transactional
+        public void removeModerator(UUID clubId, UUID moderatorId, String requesterEmail) {
+                UserAuth requesterAuth = userAuthRepository.findByEmail(requesterEmail)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User requester = requesterAuth.getUser();
+
+                boolean isSenderAdmin = clubModeratorRepository.findByClubIdAndUserId(clubId, requester.getId())
+                                .map(m -> m.getRole() == ClubRole.CLUB_ADMIN
+                                                && m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isSenderAdmin) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                User user = userRepository.findById(moderatorId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+
+                ClubModerator moderator = clubModeratorRepository.findByClubIdAndUserId(clubId, user.getId())
+                                .orElseThrow(() -> new ApiException(ResponseCode.MODERATOR_NOT_FOUND));
+
+                boolean isTargetActive = moderator.getStatus() == ClubModeratorStatus.ACTIVE;
+                if (!isTargetActive) {
+                        throw new ApiException(ResponseCode.CANNOT_REMOVE_INACTIVE_MODERATOR);
+                }
+
+                moderator.setStatus(ClubModeratorStatus.REVOKED);
+                clubModeratorRepository.save(moderator);
         }
 
         @Transactional

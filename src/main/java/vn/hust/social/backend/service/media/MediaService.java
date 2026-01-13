@@ -2,12 +2,17 @@ package vn.hust.social.backend.service.media;
 
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
+import io.minio.RemoveObjectsArgs;
+import io.minio.Result;
 import io.minio.http.Method;
+import io.minio.messages.DeleteError;
+import io.minio.messages.DeleteObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.springframework.stereotype.Service;
 import vn.hust.social.backend.common.response.ResponseCode;
+import vn.hust.social.backend.dto.media.DeleteMediasResponse;
 import vn.hust.social.backend.dto.media.download.DownloadMediaRequest;
 import vn.hust.social.backend.dto.media.download.DownloadMediasResponse;
 import vn.hust.social.backend.dto.media.upload.UploadMediaRequest;
@@ -94,6 +99,34 @@ public class MediaService {
                 presignedUrlsForDownloading.add(presignedUrlForDownloading);
             }
             return new DownloadMediasResponse(presignedUrlsForDownloading);
+        } catch (Exception e) {
+            log.error("Unexpected error: {}", e.getMessage());
+            throw new ApiException(ResponseCode.UNKNOWN_ERROR);
+        }
+    }
+
+    public DeleteMediasResponse deleteMedias(List<String> objectKeys, String bucketName) {
+        try {
+            List<DeleteObject> objects = new LinkedList<>();
+            for (String key : objectKeys) {
+                objects.add(new DeleteObject(key));
+            }
+
+            Iterable<Result<DeleteError>> results = minioClient.removeObjects(
+                    RemoveObjectsArgs.builder().bucket(bucketName).objects(objects).build());
+
+            List<String> failedKeys = new ArrayList<>();
+            Map<String, String> errors = new HashMap<>();
+
+            // The Iterable is lazy, so we must iterate to actually perform the deletion
+            for (Result<DeleteError> result : results) {
+                DeleteError error = result.get();
+                failedKeys.add(error.objectName());
+                errors.put(error.objectName(), error.message());
+                log.error("Error deleting object " + error.objectName() + "; " + error.message());
+            }
+
+            return new DeleteMediasResponse(failedKeys, errors);
         } catch (Exception e) {
             log.error("Unexpected error: {}", e.getMessage());
             throw new ApiException(ResponseCode.UNKNOWN_ERROR);
