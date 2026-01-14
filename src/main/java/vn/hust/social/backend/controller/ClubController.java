@@ -7,30 +7,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.hust.social.backend.common.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import vn.hust.social.backend.dto.club.*;
 import vn.hust.social.backend.security.JwtHeaderUtils;
 
 import vn.hust.social.backend.security.JwtUtils;
 import vn.hust.social.backend.service.club.ClubService;
-import vn.hust.social.backend.dto.club.ApplyManageResponse;
-import vn.hust.social.backend.dto.club.ApplyRequest;
-import vn.hust.social.backend.dto.club.ApproveApplicationResponse;
-import vn.hust.social.backend.dto.club.CreateClubRequest;
-import vn.hust.social.backend.dto.club.CreateClubResponse;
-import vn.hust.social.backend.dto.club.InviteFollowResponse;
-import vn.hust.social.backend.dto.club.InviteManageRequest;
-import vn.hust.social.backend.dto.club.InviteManageResponse;
-import vn.hust.social.backend.dto.club.InviteRequest;
-import vn.hust.social.backend.dto.club.RejectApplicationResponse;
-import vn.hust.social.backend.dto.club.GetFollowedClubsResponse;
-import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
 
 import java.util.UUID;
-import vn.hust.social.backend.dto.club.GetAllClubsResponse;
-
-import vn.hust.social.backend.dto.club.SearchClubsResponse;
-import vn.hust.social.backend.dto.club.GetClubResponse;
-import vn.hust.social.backend.dto.club.UpdateClubRequest;
-import vn.hust.social.backend.dto.club.UpdateClubResponse;
 
 @RestController
 @RequestMapping("/api/clubs")
@@ -205,5 +188,16 @@ public class ClubController {
             HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(clubService.getClub(id, email));
+    }
+
+    @GetMapping("/{clubId}/moderators")
+    @Operation(summary = "Get active club moderators")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<GetActiveClubModeratorsResponse> getActiveClubModerators(
+            @PathVariable UUID clubId,
+            HttpServletRequest request
+    ) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        return ApiResponse.success(clubService.getActiveClubModerators(clubId, email));
     }
 }

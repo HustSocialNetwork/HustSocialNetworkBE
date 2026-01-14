@@ -77,7 +77,7 @@ public class ProfileService {
                 .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
         if (keyword.isBlank())
             throw new ApiException(ResponseCode.SEARCH_PROFILE_KEYWORD_REQUIRED);
-        List<User> users = userRepository.searchProfiles(keyword, userAuth.getUser().getId());
+        List<User> users = userRepository.searchProfiles("*" + keyword + "*", userAuth.getUser().getId());
 
         return new SearchProfilesResponse(users.stream()
                 .map(userMapper::toProfileDTO)
