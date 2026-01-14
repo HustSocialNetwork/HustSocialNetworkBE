@@ -116,7 +116,7 @@ public class ClubService {
         }
 
         @Transactional
-        public InviteFollowResponse inviteToFollow(UUID clubId, UUID studentId, String email) {
+        public Void inviteToFollow(UUID clubId, UUID studentId, String email) {
                 UserAuth userAuth = userAuthRepository.findByEmail(email)
                                 .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
                 User user = userAuth.getUser();
@@ -124,7 +124,7 @@ public class ClubService {
                 User student = userRepository.findById(studentId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
 
-                Club club = clubRepository.findById(clubId)
+                clubRepository.findById(clubId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
 
                 if (clubFollowerRepository.existsByClubIdAndUserId(clubId, studentId)
@@ -133,12 +133,9 @@ public class ClubService {
                         throw new ApiException(ResponseCode.CLUB_ALREADY_FOLLOWED_BY_RECEIVER);
                 }
 
-                ClubFollower newFollower = new ClubFollower(club, student, ClubFollowerStatus.INVITED);
-                newFollower = clubFollowerRepository.save(newFollower);
-
                 notificationService.sendNotification(student, user, NotificationType.INVITE_CLUB_FOLLOW, clubId);
 
-                return new InviteFollowResponse(clubMapper.toClubFollowerDTO(newFollower));
+                return null;
         }
 
         @Transactional
@@ -208,19 +205,19 @@ public class ClubService {
                         moderator = existingModerator.get();
                         if (moderator.getStatus() == ClubModeratorStatus.ACTIVE) {
                                 throw new ApiException(ResponseCode.USER_ALREADY_MODERATOR);
-                        } else if (moderator.getStatus() == ClubModeratorStatus.INVITED) {
-                                throw new ApiException(ResponseCode.USER_HAS_ALREADY_BEEN_INVITED);
                         }
-                        // For REJECTED, PENDING_APPLICATION, REVOKED, we can re-invite
-                        moderator.setStatus(ClubModeratorStatus.INVITED);
+                        // For INVITED, REJECTED, PENDING_APPLICATION, REVOKED, we can re-invite
+                        // (promote directly to ACTIVE)
+                        moderator.setStatus(ClubModeratorStatus.ACTIVE);
                         moderator.setRole(role); // Update role if changed
                 } else {
-                        moderator = new ClubModerator(club, student, role, ClubModeratorStatus.INVITED);
+                        moderator = new ClubModerator(club, student, role, ClubModeratorStatus.ACTIVE);
                 }
 
                 moderator = clubModeratorRepository.save(moderator);
 
-                notificationService.sendNotification(student, requester, NotificationType.INVITE_CLUB_MANAGE, clubId);
+                notificationService.sendNotification(student, requester, NotificationType.ASSIGN_CLUB_MODERATOR,
+                                clubId);
 
                 return new InviteManageResponse(clubMapper.toClubModeratorDTO(moderator));
         }
@@ -489,7 +486,8 @@ public class ClubService {
                 clubRepository.findById(clubId)
                                 .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
 
-                List<ClubModerator> clubModerators = clubModeratorRepository.findByClubIdAndStatus(clubId, ClubModeratorStatus.ACTIVE);
+                List<ClubModerator> clubModerators = clubModeratorRepository.findByClubIdAndStatus(clubId,
+                                ClubModeratorStatus.ACTIVE);
 
                 return new GetActiveClubModeratorsResponse(
                                 clubModerators.stream().map(clubMapper::toClubModeratorDTO).toList());

@@ -70,7 +70,7 @@ public class ClubController {
     @PostMapping("/{id}/invite/follow")
     @Operation(summary = "Invite a student to follow the club")
     @PreAuthorize("hasRole('STUDENT')")
-    public ApiResponse<InviteFollowResponse> inviteToFollow(
+    public ApiResponse<Void> inviteToFollow(
             @PathVariable UUID id,
             @RequestBody InviteRequest inviteRequest,
             HttpServletRequest request) {
