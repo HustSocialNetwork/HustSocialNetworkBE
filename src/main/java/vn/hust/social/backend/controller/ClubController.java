@@ -195,9 +195,19 @@ public class ClubController {
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<GetActiveClubModeratorsResponse> getActiveClubModerators(
             @PathVariable UUID clubId,
-            HttpServletRequest request
-    ) {
+            HttpServletRequest request) {
         String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
         return ApiResponse.success(clubService.getActiveClubModerators(clubId, email));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a club")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<Void> deleteClub(
+            @PathVariable UUID id,
+            HttpServletRequest request) {
+        String email = JwtHeaderUtils.extractEmail(request, jwtUtils);
+        clubService.deleteClub(id, email);
+        return ApiResponse.success(null);
     }
 }

@@ -16,6 +16,9 @@ import vn.hust.social.backend.repository.club.ClubFollowerRepository;
 import vn.hust.social.backend.repository.club.ClubModeratorRepository;
 import vn.hust.social.backend.repository.club.ClubRepository;
 import vn.hust.social.backend.repository.user.UserRepository;
+import vn.hust.social.backend.repository.event.EventRepository;
+import vn.hust.social.backend.repository.event.EventParticipantRepository;
+import vn.hust.social.backend.entity.event.Event;
 import vn.hust.social.backend.entity.club.ClubModerator;
 import vn.hust.social.backend.entity.enums.club.ClubRole;
 import vn.hust.social.backend.entity.enums.club.ClubModeratorStatus;
@@ -49,6 +52,8 @@ public class ClubService {
         private final UserRepository userRepository;
         private final ClubMapper clubMapper;
         private final NotificationService notificationService;
+        private final EventRepository eventRepository;
+        private final EventParticipantRepository eventParticipantRepository;
 
         @Transactional
         public void followClub(UUID clubId, String email) {
@@ -478,16 +483,53 @@ public class ClubService {
         }
 
         @Transactional(readOnly = true)
-        public GetActiveClubModeratorsResponse getActiveClubModerators (UUID clubId, String email) {
-            userAuthRepository.findByEmail(email)
-                    .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
-            clubRepository.findById(clubId)
-                    .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
+        public GetActiveClubModeratorsResponse getActiveClubModerators(UUID clubId, String email) {
+                userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                clubRepository.findById(clubId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
 
-            List<ClubModerator> clubModerators = clubModeratorRepository.findAllByClubId(clubId);
+                List<ClubModerator> clubModerators = clubModeratorRepository.findByClubIdAndStatus(clubId, ClubModeratorStatus.ACTIVE);
 
-            return new GetActiveClubModeratorsResponse(
-                    clubModerators.stream().map(clubMapper::toClubModeratorDTO).toList()
-            );
+                return new GetActiveClubModeratorsResponse(
+                                clubModerators.stream().map(clubMapper::toClubModeratorDTO).toList());
+        }
+
+        @Transactional
+        public void deleteClub(UUID clubId, String requesterEmail) {
+                UserAuth requesterAuth = userAuthRepository.findByEmail(requesterEmail)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User requester = requesterAuth.getUser();
+
+                boolean isSenderAdmin = clubModeratorRepository.findByClubIdAndUserId(clubId, requester.getId())
+                                .map(m -> m.getRole() == ClubRole.CLUB_ADMIN
+                                                && m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isSenderAdmin) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                if (!clubRepository.existsById(clubId)) {
+                        throw new ApiException(ResponseCode.CLUB_NOT_FOUND);
+                }
+
+                // Delete Event Participants
+                List<Event> events = eventRepository.findByClubId(clubId);
+                List<UUID> eventIds = events.stream().map(Event::getId).toList();
+                if (!eventIds.isEmpty()) {
+                        eventParticipantRepository.deleteByEventIdIn(eventIds);
+                }
+
+                // Delete Events
+                eventRepository.deleteByClubId(clubId);
+
+                // Delete Moderators
+                clubModeratorRepository.deleteByClubId(clubId);
+
+                // Delete Followers
+                clubFollowerRepository.deleteByClubId(clubId);
+
+                // Delete Club
+                clubRepository.deleteById(clubId);
         }
 }

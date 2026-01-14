@@ -23,4 +23,6 @@ public interface ClubFollowerRepository extends JpaRepository<ClubFollower, UUID
     long countByClubId(UUID clubId);
 
     Page<ClubFollower> findByUserIdAndStatus(UUID userId, ClubFollowerStatus status, Pageable pageable);
+
+    void deleteByClubId(UUID clubId);
 }
