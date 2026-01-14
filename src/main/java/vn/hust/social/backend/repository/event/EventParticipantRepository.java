@@ -35,4 +35,6 @@ public interface EventParticipantRepository extends JpaRepository<EventParticipa
             AND MATCH(u.display_name, u.first_name, u.last_name) AGAINST(:keyword IN BOOLEAN MODE)
             """, nativeQuery = true)
     Page<EventParticipant> searchByEventIdAndKeyword(UUID eventId, String keyword, Pageable pageable);
+
+    void deleteByEventIdIn(List<UUID> eventIds);
 }

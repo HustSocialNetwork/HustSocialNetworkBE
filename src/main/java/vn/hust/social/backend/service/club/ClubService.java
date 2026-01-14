@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hust.social.backend.common.response.ResponseCode;
+import vn.hust.social.backend.dto.club.*;
 import vn.hust.social.backend.entity.club.Club;
 import vn.hust.social.backend.entity.club.ClubFollower;
 import vn.hust.social.backend.entity.user.User;
@@ -15,7 +16,9 @@ import vn.hust.social.backend.repository.club.ClubFollowerRepository;
 import vn.hust.social.backend.repository.club.ClubModeratorRepository;
 import vn.hust.social.backend.repository.club.ClubRepository;
 import vn.hust.social.backend.repository.user.UserRepository;
-import vn.hust.social.backend.dto.club.CreateClubRequest;
+import vn.hust.social.backend.repository.event.EventRepository;
+import vn.hust.social.backend.repository.event.EventParticipantRepository;
+import vn.hust.social.backend.entity.event.Event;
 import vn.hust.social.backend.entity.club.ClubModerator;
 import vn.hust.social.backend.entity.enums.club.ClubRole;
 import vn.hust.social.backend.entity.enums.club.ClubModeratorStatus;
@@ -24,12 +27,6 @@ import vn.hust.social.backend.entity.enums.club.ClubFollowerStatus;
 import java.util.UUID;
 
 import vn.hust.social.backend.mapper.ClubMapper;
-import vn.hust.social.backend.dto.club.InviteFollowResponse;
-import vn.hust.social.backend.dto.club.InviteManageResponse;
-import vn.hust.social.backend.dto.club.RejectApplicationResponse;
-import vn.hust.social.backend.dto.club.ApplyManageResponse;
-import vn.hust.social.backend.dto.club.CreateClubResponse;
-import vn.hust.social.backend.dto.club.ApproveApplicationResponse;
 import vn.hust.social.backend.service.notification.NotificationService;
 import vn.hust.social.backend.entity.enums.notification.NotificationType;
 import org.springframework.data.domain.Page;
@@ -37,15 +34,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import vn.hust.social.backend.dto.ClubDTO;
-import vn.hust.social.backend.dto.club.GetFollowedClubsResponse;
-import vn.hust.social.backend.dto.club.GetManagedClubsResponse;
 
 import vn.hust.social.backend.dto.ClubWithStatusDTO;
-import vn.hust.social.backend.dto.club.GetAllClubsResponse;
-import vn.hust.social.backend.dto.club.GetClubResponse;
-import vn.hust.social.backend.dto.club.SearchClubsResponse;
-import vn.hust.social.backend.dto.club.UpdateClubRequest;
-import vn.hust.social.backend.dto.club.UpdateClubResponse;
+
 import java.util.Optional;
 import java.util.List;
 
@@ -61,6 +52,8 @@ public class ClubService {
         private final UserRepository userRepository;
         private final ClubMapper clubMapper;
         private final NotificationService notificationService;
+        private final EventRepository eventRepository;
+        private final EventParticipantRepository eventParticipantRepository;
 
         @Transactional
         public void followClub(UUID clubId, String email) {
@@ -487,5 +480,56 @@ public class ClubService {
 
                 return new GetClubResponse(
                                 new ClubWithStatusDTO(clubMapper.toClubDTO(club), isFollowed, isManaged));
+        }
+
+        @Transactional(readOnly = true)
+        public GetActiveClubModeratorsResponse getActiveClubModerators(UUID clubId, String email) {
+                userAuthRepository.findByEmail(email)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                clubRepository.findById(clubId)
+                                .orElseThrow(() -> new ApiException(ResponseCode.CLUB_NOT_FOUND));
+
+                List<ClubModerator> clubModerators = clubModeratorRepository.findByClubIdAndStatus(clubId, ClubModeratorStatus.ACTIVE);
+
+                return new GetActiveClubModeratorsResponse(
+                                clubModerators.stream().map(clubMapper::toClubModeratorDTO).toList());
+        }
+
+        @Transactional
+        public void deleteClub(UUID clubId, String requesterEmail) {
+                UserAuth requesterAuth = userAuthRepository.findByEmail(requesterEmail)
+                                .orElseThrow(() -> new ApiException(ResponseCode.USER_NOT_FOUND));
+                User requester = requesterAuth.getUser();
+
+                boolean isSenderAdmin = clubModeratorRepository.findByClubIdAndUserId(clubId, requester.getId())
+                                .map(m -> m.getRole() == ClubRole.CLUB_ADMIN
+                                                && m.getStatus() == ClubModeratorStatus.ACTIVE)
+                                .orElse(false);
+                if (!isSenderAdmin) {
+                        throw new ApiException(ResponseCode.FORBIDDEN);
+                }
+
+                if (!clubRepository.existsById(clubId)) {
+                        throw new ApiException(ResponseCode.CLUB_NOT_FOUND);
+                }
+
+                // Delete Event Participants
+                List<Event> events = eventRepository.findByClubId(clubId);
+                List<UUID> eventIds = events.stream().map(Event::getId).toList();
+                if (!eventIds.isEmpty()) {
+                        eventParticipantRepository.deleteByEventIdIn(eventIds);
+                }
+
+                // Delete Events
+                eventRepository.deleteByClubId(clubId);
+
+                // Delete Moderators
+                clubModeratorRepository.deleteByClubId(clubId);
+
+                // Delete Followers
+                clubFollowerRepository.deleteByClubId(clubId);
+
+                // Delete Club
+                clubRepository.deleteById(clubId);
         }
 }
